@@ -28,6 +28,13 @@ const showNav = computed(() => {
             我的订单
           </RouterLink>
           <RouterLink
+            v-if="currentUser?.role === 'staff' || currentUser?.role === 'admin'"
+            to="/orders"
+            class="nav-item"
+          >
+            订单管理
+          </RouterLink>
+          <RouterLink
             v-if="currentUser?.role === 'admin'"
             to="/staffs"
             class="nav-item"

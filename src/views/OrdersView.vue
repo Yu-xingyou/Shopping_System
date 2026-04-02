@@ -30,8 +30,15 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="150" fixed="right" v-if="isStaffOrAdmin">
+        <el-table-column label="操作" width="300" fixed="right" v-if="isStaffOrAdmin">
           <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="showStatusDialog(row)"
+            >
+              修改状态
+            </el-button>
             <el-button
               v-if="row.status === 0"
               type="danger"
@@ -44,6 +51,28 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog
+      v-model="statusDialogVisible"
+      title="修改订单状态"
+      width="400px"
+    >
+      <el-form :model="statusForm" label-width="100px">
+        <el-form-item label="订单状态">
+          <el-select v-model="statusForm.status" placeholder="请选择订单状态" style="width: 100%">
+            <el-option :label="'待付款'" :value="0" />
+            <el-option :label="'已付款'" :value="1" />
+            <el-option :label="'已发货'" :value="2" />
+            <el-option :label="'已完成'" :value="3" />
+            <el-option :label="'已取消'" :value="4" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="statusDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="updateOrderStatus" :loading="updating">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -56,6 +85,12 @@ import request from '@/utill/request'
 const router = useRouter()
 const orders = ref([])
 const currentUser = ref(null)
+const statusDialogVisible = ref(false)
+const updating = ref(false)
+const statusForm = ref({
+  orderId: null,
+  status: null
+})
 
 const isStaffOrAdmin = computed(() => {
   return currentUser.value && (currentUser.value.role === 'staff' || currentUser.value.role === 'admin')
@@ -91,6 +126,40 @@ const loadOrders = async () => {
   }
 }
 
+const showStatusDialog = (row) => {
+  statusForm.value.orderId = row.id
+  statusForm.value.status = row.status
+  statusDialogVisible.value = true
+}
+
+const updateOrderStatus = async () => {
+  if (statusForm.value.status === null) {
+    ElMessage.error('请选择订单状态')
+    return
+  }
+
+  try {
+    updating.value = true
+    const res = await request.put(`/order/${statusForm.value.orderId}/status`, null, {
+      params: {
+        status: statusForm.value.status,
+        staffId: currentUser.value.staffId || currentUser.value.adminId
+      }
+    })
+
+    if (res.code === 200) {
+      ElMessage.success('订单状态更新成功')
+      statusDialogVisible.value = false
+      loadOrders()
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('更新订单状态失败')
+  } finally {
+    updating.value = false
+  }
+}
+
 const cancelOrder = (row) => {
   ElMessageBox.confirm('确定要取消该订单吗？', '提示', {
     confirmButtonText: '确定',
@@ -98,7 +167,6 @@ const cancelOrder = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      // 员工和管理员取消订单时，使用订单中的 userId
       const cancelUserId = row.userId || currentUser.value.userId
 
       const res = await request.post(`/order/${row.id}/cancel`, null, {
