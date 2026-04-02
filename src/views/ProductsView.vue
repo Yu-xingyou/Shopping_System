@@ -4,6 +4,21 @@
       <template #header>
         <div class="card-header">
           <h2>商品列表</h2>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <el-badge :value="cartTotalQuantity" :hidden="cartTotalQuantity === 0" type="primary">
+              <el-button type="primary" size="small" @click="showCartDialog">
+                购物车
+              </el-button>
+            </el-badge>
+            <el-button
+              type="success"
+              size="small"
+              @click="submitOrder"
+              :disabled="cartTotalQuantity === 0"
+            >
+              提交订单
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -36,6 +51,19 @@
           </template>
         </el-table-column>
         <el-table-column prop="category" label="分类" width="120" />
+        <el-table-column label="预购数量" width="180" v-if="isUser">
+          <template #default="{ row }">
+            <el-input-number
+              v-model="cart[row.id]"
+              :min="0"
+              :max="999"
+              size="small"
+              controls-position="right"
+              style="width: 120px"
+              @change="handleQuantityChange(row)"
+            />
+          </template>
+        </el-table-column>
       </el-table>
 
       <div class="pagination-container">
@@ -50,6 +78,132 @@
         />
       </div>
     </el-card>
+
+    <el-dialog
+      v-model="cartDialogVisible"
+      title="购物车"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="cartItems.length === 0" style="text-align: center; padding: 40px; color: #999;">
+        <el-empty description="购物车是空的" />
+      </div>
+      <el-table
+        v-else
+        :data="cartItems"
+        stripe
+        style="width: 100%"
+        max-height="400"
+      >
+        <el-table-column prop="name" label="商品名称" min-width="200" />
+        <el-table-column prop="price" label="单价" width="120" align="right">
+          <template #default="{ row }">
+            <span style="color: #f56c6c; font-weight: bold;">¥{{ row.price?.toFixed(2) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="quantity" label="数量" width="120" align="center" />
+        <el-table-column label="小计" width="140" align="right">
+          <template #default="{ row }">
+            <span style="color: #f56c6c; font-weight: bold; font-size: 15px;">
+              ¥{{ (row.price * row.quantity).toFixed(2) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              type="danger"
+              size="small"
+              @click="removeFromCart(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div v-if="cartItems.length > 0" class="cart-footer">
+        <div class="cart-total">
+          <span>总计：</span>
+          <span class="total-amount">¥{{ cartTotalAmount.toFixed(2) }}</span>
+        </div>
+        <div style="margin-top: 15px; text-align: right;">
+          <el-button @click="cartDialogVisible = false">继续购物</el-button>
+          <el-button type="primary" @click="submitOrderFromCart">去结算</el-button>
+        </div>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+      v-model="orderDialogVisible"
+      title="确认订单信息"
+      width="550px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="orderForm" label-width="100px" size="default">
+        <el-form-item label="收货人" required>
+          <el-input
+            v-model="orderForm.receiverName"
+            placeholder="请输入收货人姓名"
+            maxlength="50"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="联系电话" required>
+          <el-input
+            v-model="orderForm.receiverPhone"
+            placeholder="请输入联系电话"
+            maxlength="20"
+          />
+        </el-form-item>
+        <el-form-item label="收货地址" required>
+          <el-input
+            v-model="orderForm.receiverAddress"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入详细收货地址"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+            v-model="orderForm.remark"
+            type="textarea"
+            :rows="2"
+            placeholder="选填备注信息（如配送时间要求等）"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+
+      <div class="order-summary">
+        <div class="summary-title">订单商品清单：</div>
+        <ul class="order-items-list">
+          <li v-for="item in cartItems" :key="item.id">
+            <span>{{ item.name }}</span>
+            <span class="item-quantity">x {{ item.quantity }}</span>
+            <span class="item-subtotal">¥{{ (item.price * item.quantity).toFixed(2) }}</span>
+          </li>
+        </ul>
+        <div class="order-total-amount">
+          <span>订单总额：</span>
+          <span class="amount">¥{{ cartTotalAmount.toFixed(2) }}</span>
+        </div>
+        <div class="order-tip">
+          <el-icon><Info-Filled /></el-icon>
+          <span>温馨提示：预购商品数量可以超过库存数量</span>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="orderDialogVisible = false">返回修改</el-button>
+        <el-button type="primary" @click="confirmOrder" :loading="submitting">
+          {{ submitting ? '提交中...' : '确认提交订单' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -57,6 +211,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 import request from '@/utill/request'
 
 const router = useRouter()
@@ -67,12 +222,44 @@ const pageSize = ref(10)
 const total = ref(0)
 const searchText = ref('')
 const currentUser = ref(null)
+const cart = reactive({})
+const cartDialogVisible = ref(false)
+const orderDialogVisible = ref(false)
+const submitting = ref(false)
+const orderForm = ref({
+  receiverName: '',
+  receiverPhone: '',
+  receiverAddress: '',
+  remark: ''
+})
 
 const isAdmin = computed(() => {
   return currentUser.value && currentUser.value.role === 'admin'
 })
 
-// 加载用户信息
+const isUser = computed(() => {
+  return currentUser.value && currentUser.value.role === 'user'
+})
+
+const cartItems = computed(() => {
+  return products.value
+    .filter(p => cart[p.id] && cart[p.id] > 0)
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      quantity: cart[p.id]
+    }))
+})
+
+const cartTotalQuantity = computed(() => {
+  return Object.values(cart).reduce((sum, qty) => sum + (qty || 0), 0)
+})
+
+const cartTotalAmount = computed(() => {
+  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+})
+
 const loadCurrentUser = () => {
   try {
     const savedUser = localStorage.getItem('currentUser')
@@ -112,6 +299,109 @@ const loadProducts = async () => {
   }
 }
 
+const handleQuantityChange = (product) => {
+  if (!cart[product.id]) {
+    cart[product.id] = 0
+  }
+  if (cart[product.id] < 0) {
+    cart[product.id] = 0
+  }
+
+  if (cart[product.id] > 0) {
+    ElMessage.success({
+      message: `已将"${product.name}"加入购物车，共 ${cart[product.id]} 件`,
+      duration: 1500
+    })
+  }
+}
+
+const showCartDialog = () => {
+  if (cartTotalQuantity.value === 0) {
+    ElMessage.info('购物车是空的，请先选择商品')
+    return
+  }
+  cartDialogVisible.value = true
+}
+
+const removeFromCart = (product) => {
+  cart[product.id] = 0
+  ElMessage.success('已删除')
+}
+
+const submitOrder = () => {
+  if (!isUser.value) {
+    ElMessage.warning('只有用户角色可以创建预购单')
+    return
+  }
+
+  if (cartTotalQuantity.value === 0) {
+    ElMessage.warning('请选择至少一件商品')
+    return
+  }
+
+  orderDialogVisible.value = true
+}
+
+const submitOrderFromCart = () => {
+  cartDialogVisible.value = false
+  submitOrder()
+}
+
+const confirmOrder = async () => {
+  if (!orderForm.value.receiverName || !orderForm.value.receiverPhone || !orderForm.value.receiverAddress) {
+    ElMessage.warning('请填写完整的收货信息')
+    return
+  }
+
+  try {
+    submitting.value = true
+
+    const items = cartItems.value.map(item => ({
+      productId: item.id,
+      productName: item.name,
+      productPrice: item.price,
+      quantity: item.quantity
+    }))
+
+    const requestData = {
+      userId: currentUser.value.userId,
+      totalAmount: cartTotalAmount.value,
+      receiverName: orderForm.value.receiverName,
+      receiverPhone: orderForm.value.receiverPhone,
+      receiverAddress: orderForm.value.receiverAddress,
+      remark: orderForm.value.remark,
+      items: items
+    }
+
+    const res = await request.post('/order/create', requestData)
+
+    if (res.code === 200) {
+      ElMessage.success({
+        message: '预购单创建成功！即将跳转到订单页面',
+        duration: 2000
+      })
+      cart.value = {}
+      orderForm.value = {
+        receiverName: '',
+        receiverPhone: '',
+        receiverAddress: '',
+        remark: ''
+      }
+      orderDialogVisible.value = false
+      cartDialogVisible.value = false
+
+      setTimeout(() => {
+        router.push('/user-orders')
+      }, 2000)
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('创建预购单失败：' + (error.response?.data?.message || error.message))
+  } finally {
+    submitting.value = false
+  }
+}
+
 const handleLogout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('currentUser')
@@ -133,13 +423,11 @@ const handleCurrentChange = (val) => {
   loadProducts()
 }
 
-// 每次进入页面都重新加载用户信息
 onMounted(() => {
   loadCurrentUser()
   loadProducts()
 })
 
-// 监听路由参数变化（比如从其他页面返回）
 watch(() => route.path, (newPath, oldPath) => {
   if (newPath !== oldPath) {
     loadCurrentUser()
@@ -148,50 +436,10 @@ watch(() => route.path, (newPath, oldPath) => {
 </script>
 
 <style scoped>
-.top-navigation {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 15px 30px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  margin-bottom: 20px;
-}
-
-.nav-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.user-info {
-  color: white;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nav-right {
-  display: flex;
-  gap: 10px;
-}
-
 .products-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
-  margin-top: 80px;
 }
 
 .products-card {
@@ -208,6 +456,101 @@ watch(() => route.path, (newPath, oldPath) => {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+.cart-footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ebeef5;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 16px;
+  color: #606266;
+}
+
+.cart-total .total-amount {
+  font-size: 22px;
+  font-weight: bold;
+  color: #f56c6c;
+  margin-left: 10px;
+}
+
+.order-summary {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.summary-title {
+  font-weight: bold;
+  color: #606266;
+  margin-bottom: 10px;
+}
+
+.order-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.order-items-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px dashed #dcdfe6;
+  font-size: 14px;
+}
+
+.order-items-list li:last-child {
+  border-bottom: none;
+}
+
+.item-quantity {
+  color: #909399;
+  margin: 0 15px;
+}
+
+.item-subtotal {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.order-total-amount {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  font-size: 16px;
+  color: #606266;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #dcdfe6;
+}
+
+.order-total-amount .amount {
+  font-size: 20px;
+  font-weight: bold;
+  color: #f56c6c;
+  margin-left: 10px;
+}
+
+.order-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #fdf6ec;
+  border-radius: 4px;
+  color: #e6a23c;
+  font-size: 13px;
 }
 </style>
 
