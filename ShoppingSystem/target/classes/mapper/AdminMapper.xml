@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xingyou.mapper.AdminMapper">
+
+    <insert id="insert" parameterType="com.xingyou.entity.people.Admin">
+        INSERT INTO admin (admin_id, name, password)
+        VALUES (#{adminId}, #{name}, #{password})
+    </insert>
+
+    <select id="findByAdminId" resultType="com.xingyou.entity.people.Admin">
+        SELECT * FROM admin WHERE admin_id = #{adminId}
+    </select>
+
+    <select id="findAllUsers" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user
+    </select>
+
+    <select id="findUserByUserId" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <select id="findUserByName" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE name LIKE CONCAT('%', #{name}, '%')
+    </select>
+
+    <select id="findAllStaffs" resultType="com.xingyou.entity.people.Staff">
+        SELECT * FROM staff
+    </select>
+
+    <select id="findStaffByStaffId" resultType="com.xingyou.entity.people.Staff">
+        SELECT * FROM staff WHERE staff_id = #{staffId}
+    </select>
+
+    <select id="findStaffByName" resultType="com.xingyou.entity.people.Staff">
+        SELECT * FROM staff WHERE name LIKE CONCAT('%', #{name}, '%')
+    </select>
+
+    <select id="findAllOrders" resultType="com.xingyou.entity.shopping.Order">
+        SELECT * FROM `order`
+    </select>
+
+    <insert id="addStaff" parameterType="com.xingyou.entity.people.Staff">
+        INSERT INTO staff (staff_id, name, password, status)
+        VALUES (#{staffId}, #{name}, #{password}, #{status})
+    </insert>
+
+    <update id="updateStaff" parameterType="com.xingyou.entity.people.Staff">
+        UPDATE staff
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE staff_id = #{staffId}
+    </update>
+
+    <update id="updateProductStock">
+        UPDATE product
+        SET stock = #{stock}
+        WHERE id = #{id}
+    </update>
+
+    <update id="update" parameterType="com.xingyou.entity.people.Admin">
+        UPDATE admin
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="password != null">password = #{password},</if>
+        </set>
+        WHERE admin_id = #{adminId}
+    </update>
+</mapper>

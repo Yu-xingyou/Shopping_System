@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: ShoppingSystem
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/shopping_system
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 0927
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+      enabled: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+server:
+  port: 8080

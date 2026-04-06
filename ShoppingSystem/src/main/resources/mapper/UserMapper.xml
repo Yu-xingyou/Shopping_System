@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xingyou.mapper.UserMapper">
+
+    <insert id="insert" parameterType="com.xingyou.entity.people.User">
+        INSERT INTO user (user_id, name, password, sex, money)
+        VALUES (#{userId}, #{name}, #{password}, #{sex}, #{money})
+    </insert>
+
+    <select id="findByUserId" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <update id="update" parameterType="com.xingyou.entity.people.User">
+        UPDATE user
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="password != null">password = #{password},</if>
+        </set>
+        WHERE user_id = #{userId}
+    </update>
+</mapper>
