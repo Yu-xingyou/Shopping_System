@@ -67,19 +67,18 @@
     </update>
 
     <update id="updateUserMoney">
-        UPDATE user
-        SET money = money + #{money}
-        WHERE user_id = #{userId}
+        UPDATE user SET money = money + #{money} WHERE user_id = #{userId}
     </update>
 
     <select id="findUserByUserId" resultType="com.xingyou.entity.people.User">
-        SELECT
-            user_id AS userId,
-            name,
-            password,
-            sex,
-            money
-        FROM user
-        WHERE user_id = #{userId}
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <update id="updateProductStock">
+        UPDATE product SET stock = stock - #{quantity} WHERE id = #{productId} AND stock >= #{quantity}
+    </update>
+
+    <select id="findProductById" resultType="com.xingyou.entity.shopping.Product">
+        SELECT * FROM product WHERE id = #{id}
     </select>
 </mapper>

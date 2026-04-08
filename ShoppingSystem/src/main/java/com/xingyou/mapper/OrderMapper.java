@@ -28,4 +28,8 @@ public interface OrderMapper {
     void updateUserMoney(@Param("userId") String userId, @Param("money") Double money);
     
     User findUserByUserId(@Param("userId") String userId);
+    
+    void updateProductStock(@Param("productId") Integer productId, @Param("quantity") Integer quantity);
+    
+    com.xingyou.entity.shopping.Product findProductById(@Param("id") Integer id);
 }

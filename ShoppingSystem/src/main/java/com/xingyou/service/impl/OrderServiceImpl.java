@@ -83,6 +83,39 @@ public class OrderServiceImpl implements OrderService {
     
     @Override
     public void updateStatus(Integer id, Integer status) {
+        Order order = orderMapper.findById(id);
+        if (order == null) {
+            throw new BusinessException(404, "订单不存在");
+        }
+        
+        if (status == 2 && order.getStatus() != 2) {
+            List<OrderItem> items = orderMapper.findOrderItemsByOrderId(id);
+            if (items != null && !items.isEmpty()) {
+                List<String> insufficientProducts = new java.util.ArrayList<>();
+                
+                for (OrderItem item : items) {
+                    com.xingyou.entity.shopping.Product product = orderMapper.findProductById(item.getProductId());
+                    if (product == null) {
+                        throw new BusinessException(404, "商品【" + item.getProductName() + "】不存在");
+                    }
+                    
+                    int currentStock = product.getStock() != null ? product.getStock() : 0;
+                    if (currentStock < item.getQuantity()) {
+                        insufficientProducts.add("【" + item.getProductName() + "】(当前库存:" + currentStock + ", 需要:" + item.getQuantity() + ")");
+                    }
+                }
+                
+                if (!insufficientProducts.isEmpty()) {
+                    String errorMsg = "以下商品库存不足，无法发货：" + String.join("、", insufficientProducts);
+                    throw new BusinessException(400, errorMsg);
+                }
+                
+                for (OrderItem item : items) {
+                    orderMapper.updateProductStock(item.getProductId(), item.getQuantity());
+                }
+            }
+        }
+        
         orderMapper.updateStatus(id, status);
     }
     

@@ -17,6 +17,9 @@
             <if test="product.name != null and product.name.trim() != ''">
                 AND name LIKE CONCAT('%', #{product.name}, '%')
             </if>
+            <if test="product.category != null and product.category.trim() != ''">
+                AND category = #{product.category}
+            </if>
         </where>
     </select>
 

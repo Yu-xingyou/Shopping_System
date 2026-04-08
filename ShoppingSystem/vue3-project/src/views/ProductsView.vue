@@ -22,16 +22,29 @@
         </div>
       </template>
 
-      <div style="display: flex; gap: 10px; margin-bottom: 20px;" v-if="isAdmin">
+      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <el-input
           v-model="searchText"
           placeholder="搜索商品名称"
           prefix-icon="Search"
-          style="width: 300px"
+          style="width: 250px"
           clearable
-          @keyup.enter="loadProducts"
+          @keyup.enter="handleSearch"
         />
-        <el-button type="primary" @click="loadProducts">查询</el-button>
+        <el-select
+          v-model="searchCategory"
+          placeholder="选择分类"
+          style="width: 150px"
+          clearable
+        >
+          <el-option label="电子产品" value="电子产品" />
+          <el-option label="服装" value="服装" />
+          <el-option label="食品" value="食品" />
+          <el-option label="图书" value="图书" />
+          <el-option label="其他" value="其他" />
+        </el-select>
+        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
 
       <el-table :data="products" stripe style="width: 100%">
@@ -259,6 +272,7 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const searchText = ref('')
+const searchCategory = ref('')
 const currentUser = ref(null)
 const cart = reactive({})
 const cartDialogVisible = ref(false)
@@ -338,6 +352,47 @@ const loadProducts = async () => {
     products.value = []
     total.value = 0
   }
+}
+
+const handleSearch = async () => {
+  try {
+    const searchParams = {}
+    if (searchText.value.trim()) {
+      searchParams.name = searchText.value.trim()
+    }
+    if (searchCategory.value) {
+      searchParams.category = searchCategory.value
+    }
+
+    const res = await request.post('/product/search', searchParams, {
+      params: {
+        pageNum: currentPage.value,
+        pageSize: pageSize.value
+      }
+    })
+
+    if (res.code === 200) {
+      if (res.data.list) {
+        products.value = res.data.list
+        total.value = res.data.total
+      } else {
+        products.value = []
+        total.value = 0
+      }
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('搜索失败')
+    products.value = []
+    total.value = 0
+  }
+}
+
+const handleReset = () => {
+  searchText.value = ''
+  searchCategory.value = ''
+  currentPage.value = 1
+  loadProducts()
 }
 
 const handleQuantityChange = (product) => {
@@ -456,12 +511,20 @@ const navigateTo = (path) => {
 
 const handleSizeChange = (val) => {
   pageSize.value = val
-  loadProducts()
+  if (searchText.value.trim() || searchCategory.value) {
+    handleSearch()
+  } else {
+    loadProducts()
+  }
 }
 
 const handleCurrentChange = (val) => {
   currentPage.value = val
-  loadProducts()
+  if (searchText.value.trim() || searchCategory.value) {
+    handleSearch()
+  } else {
+    loadProducts()
+  }
 }
 
 const startEditStock = (row) => {
