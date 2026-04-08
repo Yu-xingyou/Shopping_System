@@ -2,8 +2,21 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    订单数据访问层映射文件
+
+    提供订单的创建、查询、状态更新等核心功能，
+    以及订单明细、用户余额、商品库存的相关操作。
+-->
 <mapper namespace="com.xingyou.mapper.OrderMapper">
 
+    <!--
+        插入订单主表数据
+
+        使用 useGeneratedKeys 和 keyProperty 自动获取生成的订单ID，
+        用于后续关联订单明细。
+    -->
     <insert id="insert" parameterType="com.xingyou.entity.shopping.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO `order` (
             order_num, 
@@ -28,6 +41,7 @@
         )
     </insert>
 
+    <!-- 插入订单明细项 -->
     <insert id="insertOrderItem" parameterType="com.xingyou.entity.shopping.OrderItem">
         INSERT INTO order_item (
             order_id, 
@@ -44,40 +58,59 @@
         )
     </insert>
 
+    <!-- 查询所有订单，按创建时间降序排列 -->
     <select id="findAll" resultType="com.xingyou.entity.shopping.Order">
         SELECT * FROM `order` ORDER BY create_time DESC
     </select>
 
+    <!-- 根据订单ID查询订单 -->
     <select id="findById" resultType="com.xingyou.entity.shopping.Order">
         SELECT * FROM `order` WHERE id = #{id}
     </select>
 
+    <!-- 根据用户ID查询该用户的所有订单，按创建时间降序排列 -->
     <select id="findByUserId" resultType="com.xingyou.entity.shopping.Order">
         SELECT * FROM `order` WHERE user_id = #{userId} ORDER BY create_time DESC
     </select>
 
+    <!-- 根据订单ID查询订单明细列表 -->
     <select id="findOrderItemsByOrderId" resultType="com.xingyou.entity.shopping.OrderItem">
         SELECT * FROM order_item WHERE order_id = #{orderId}
     </select>
 
+    <!-- 更新订单状态 -->
     <update id="updateStatus">
         UPDATE `order`
         SET status = #{status}
         WHERE id = #{id}
     </update>
 
+    <!--
+        更新用户余额
+
+        通过正负数控制充值或扣款：
+        正数表示增加余额，负数表示扣除余额。
+    -->
     <update id="updateUserMoney">
         UPDATE user SET money = money + #{money} WHERE user_id = #{userId}
     </update>
 
+    <!-- 根据用户ID查询用户信息（用于余额校验） -->
     <select id="findUserByUserId" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user WHERE user_id = #{userId}
     </select>
 
+    <!--
+        扣减商品库存
+
+        使用 WHERE 条件确保库存充足才执行更新，
+        防止超卖现象发生。
+    -->
     <update id="updateProductStock">
         UPDATE product SET stock = stock - #{quantity} WHERE id = #{productId} AND stock >= #{quantity}
     </update>
 
+    <!-- 根据商品ID查询商品信息（用于库存检查） -->
     <select id="findProductById" resultType="com.xingyou.entity.shopping.Product">
         SELECT * FROM product WHERE id = #{id}
     </select>

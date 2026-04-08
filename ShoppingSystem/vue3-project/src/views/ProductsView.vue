@@ -25,24 +25,12 @@
       <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <el-input
           v-model="searchText"
-          placeholder="搜索商品名称"
+          placeholder="搜索商品（名称、种类）"
           prefix-icon="Search"
-          style="width: 250px"
+          style="width: 350px"
           clearable
           @keyup.enter="handleSearch"
         />
-        <el-select
-          v-model="searchCategory"
-          placeholder="选择分类"
-          style="width: 150px"
-          clearable
-        >
-          <el-option label="电子产品" value="电子产品" />
-          <el-option label="服装" value="服装" />
-          <el-option label="食品" value="食品" />
-          <el-option label="图书" value="图书" />
-          <el-option label="其他" value="其他" />
-        </el-select>
         <el-button type="primary" @click="handleSearch">查询</el-button>
         <el-button @click="handleReset">重置</el-button>
       </div>
@@ -272,7 +260,6 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 const searchText = ref('')
-const searchCategory = ref('')
 const currentUser = ref(null)
 const cart = reactive({})
 const cartDialogVisible = ref(false)
@@ -359,9 +346,7 @@ const handleSearch = async () => {
     const searchParams = {}
     if (searchText.value.trim()) {
       searchParams.name = searchText.value.trim()
-    }
-    if (searchCategory.value) {
-      searchParams.category = searchCategory.value
+      searchParams.category = searchText.value.trim()
     }
 
     const res = await request.post('/product/search', searchParams, {
@@ -390,7 +375,6 @@ const handleSearch = async () => {
 
 const handleReset = () => {
   searchText.value = ''
-  searchCategory.value = ''
   currentPage.value = 1
   loadProducts()
 }
@@ -511,7 +495,7 @@ const navigateTo = (path) => {
 
 const handleSizeChange = (val) => {
   pageSize.value = val
-  if (searchText.value.trim() || searchCategory.value) {
+  if (searchText.value.trim()) {
     handleSearch()
   } else {
     loadProducts()
@@ -520,7 +504,7 @@ const handleSizeChange = (val) => {
 
 const handleCurrentChange = (val) => {
   currentPage.value = val
-  if (searchText.value.trim() || searchCategory.value) {
+  if (searchText.value.trim()) {
     handleSearch()
   } else {
     loadProducts()

@@ -143,15 +143,31 @@ public class OrderController {
         }
     }
 
+    /**
+     * 确认收货接口
+     * 
+     * 处理用户确认收货的业务逻辑，验证用户ID后调用订单服务完成收货操作。
+     * 成功确认后订单状态将更新为已完成。
+     *
+     * @param id 订单ID，用于指定需要确认收货的订单
+     * @param userId 用户ID，用于验证操作用户的合法性，不能为空或空字符串
+     * @return Result 返回操作结果，包含以下情况：
+     *         - 参数校验失败时返回400错误码和提示信息
+     *         - 业务异常时返回对应的错误码和异常信息
+     *         - 系统异常时返回500错误码和异常信息
+     *         - 成功时返回成功标识和"确认收货成功，订单已完成"提示
+     */
     @PostMapping("/{id}/confirm")
     public Result confirmReceipt(
             @PathVariable Integer id,
             @RequestParam String userId) {
         
+        // 验证用户ID参数的合法性
         if (userId == null || userId.trim().isEmpty()) {
             return Result.error(400, "用户 ID 不能为空");
         }
         
+        // 调用订单服务执行确认收货操作，并处理可能的异常情况
         try {
             orderService.confirmReceipt(id, userId);
             return Result.success("确认收货成功，订单已完成");
@@ -162,21 +178,53 @@ public class OrderController {
         }
     }
 
+    /**
+     * 查询所有订单接口
+     * 
+     * 获取系统中所有的订单列表信息。
+     *
+     * @return Result 返回操作结果，包含以下情况：
+     *         - 成功时返回所有订单的列表数据
+     */
     @GetMapping("/all")
     public Result all() {
         List<Order> orders = orderService.findAll();
         return Result.success(orders);
     }
     
+    /**
+     * 查询订单明细接口
+     * 
+     * 根据订单ID获取该订单包含的所有商品明细信息。
+     *
+     * @param id 订单ID，用于指定需要查询明细的订单
+     * @return Result 返回操作结果，包含以下情况：
+     *         - 成功时返回订单明细列表数据
+     */
     @GetMapping("/{id}/items")
     public Result getItems(@PathVariable Integer id) {
         List<OrderItem> items = orderService.findOrderItemsByOrderId(id);
         return Result.success(items);
     }
     
+    /**
+     * 解析订单数据
+     * 
+     * 从请求Map中提取订单相关字段并构建Order对象，只处理非空字段。
+     *
+     * @param request 包含订单信息的请求参数Map，可能包含以下键：
+     *                - userId: 用户ID
+     *                - totalAmount: 订单总金额
+     *                - receiverName: 收货人姓名
+     *                - receiverPhone: 收货人电话
+     *                - receiverAddress: 收货地址
+     *                - remark: 订单备注
+     * @return Order 解析后的订单对象，包含所有提供的非空字段
+     */
     private Order parseOrder(Map<String, Object> request) {
         Order order = new Order();
         
+        // 提取并设置订单的各项属性，仅处理非空值
         if (request.get("userId") != null) {
             order.setUserId((String) request.get("userId"));
         }
@@ -198,16 +246,29 @@ public class OrderController {
         
         return order;
     }
-    
+
+    /**
+     * 解析订单商品明细列表
+     * 
+     * 从请求Map中提取订单商品列表信息，验证非空后遍历构建OrderItem对象集合。
+     * 每个商品项包含产品ID、名称、价格、数量和图片等信息。
+     *
+     * @param request 包含订单商品信息的请求参数Map，其中"items"键对应的值为商品列表
+     * @return List<OrderItem> 解析后的订单商品明细列表
+     * @throws IllegalArgumentException 当商品列表为空或null时抛出异常
+     */
     @SuppressWarnings("unchecked")
     private List<OrderItem> parseOrderItems(Map<String, Object> request) {
         List<Map<String, Object>> itemsMap = (List<Map<String, Object>>) request.get("items");
         
+        // 验证订单商品列表不能为空
         if (itemsMap == null || itemsMap.isEmpty()) {
             throw new IllegalArgumentException("订单商品不能为空");
         }
         
         List<OrderItem> orderItems = new java.util.ArrayList<>();
+        
+        // 遍历商品列表，逐个解析并构建OrderItem对象
         for (Map<String, Object> itemMap : itemsMap) {
             OrderItem item = new OrderItem();
             
@@ -232,4 +293,5 @@ public class OrderController {
         
         return orderItems;
     }
+
 }

@@ -15,12 +15,17 @@
                 AND id = #{product.id}
             </if>
             <if test="product.name != null and product.name.trim() != ''">
-                AND name LIKE CONCAT('%', #{product.name}, '%')
-            </if>
-            <if test="product.category != null and product.category.trim() != ''">
-                AND category = #{product.category}
+                AND (name LIKE CONCAT('%', #{product.name}, '%') OR category LIKE CONCAT('%', #{product.name}, '%'))
             </if>
         </where>
+        <if test="product.name != null and product.name.trim() != ''">
+            ORDER BY
+                CASE
+                    WHEN name LIKE CONCAT('%', #{product.name}, '%') THEN 0
+                    ELSE 1
+                END,
+                id ASC
+        </if>
     </select>
 
     <select id="findById" resultType="com.xingyou.entity.shopping.Product">
