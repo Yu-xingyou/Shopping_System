@@ -43,11 +43,49 @@
             ¥{{ row.price?.toFixed(2) || '0.00' }}
           </template>
         </el-table-column>
-        <el-table-column prop="stock" label="库存" width="120">
+        <el-table-column prop="stock" label="库存" width="180">
           <template #default="{ row }">
-            <el-tag :type="row.stock > 0 ? 'success' : 'danger'">
-              {{ row.stock || 0 }}
-            </el-tag>
+            <div v-if="isAdmin && editingProductId === row.id">
+              <el-input-number
+                v-model="editingStock"
+                :min="0"
+                :max="9999"
+                size="small"
+                controls-position="right"
+                style="width: 100px"
+              />
+              <el-button
+                type="primary"
+                size="small"
+                @click="confirmUpdateStock(row)"
+                :loading="updatingStock"
+                style="margin-left: 5px"
+              >
+                确定
+              </el-button>
+              <el-button
+                size="small"
+                @click="cancelEditStock"
+                style="margin-left: 5px"
+              >
+                取消
+              </el-button>
+            </div>
+            <div v-else>
+              <el-tag :type="row.stock > 0 ? 'success' : 'danger'">
+                {{ row.stock || 0 }}
+              </el-tag>
+              <el-button
+                v-if="isAdmin"
+                type="primary"
+                link
+                size="small"
+                @click="startEditStock(row)"
+                style="margin-left: 8px"
+              >
+                修改
+              </el-button>
+            </div>
           </template>
         </el-table-column>
         <el-table-column prop="category" label="分类" width="120" />
@@ -226,6 +264,9 @@ const cart = reactive({})
 const cartDialogVisible = ref(false)
 const orderDialogVisible = ref(false)
 const submitting = ref(false)
+const editingProductId = ref(null)
+const editingStock = ref(0)
+const updatingStock = ref(false)
 const orderForm = ref({
   receiverName: '',
   receiverPhone: '',
@@ -421,6 +462,41 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   currentPage.value = val
   loadProducts()
+}
+
+const startEditStock = (row) => {
+  editingProductId.value = row.id
+  editingStock.value = row.stock
+}
+
+const cancelEditStock = () => {
+  editingProductId.value = null
+  editingStock.value = 0
+}
+
+const confirmUpdateStock = async (row) => {
+  if (editingStock.value < 0) {
+    ElMessage.error('库存数量不能为负数')
+    return
+  }
+
+  try {
+    updatingStock.value = true
+    const res = await request.put(`/admin/products/${row.id}/stock`, {
+      stock: editingStock.value
+    })
+
+    if (res.code === 200) {
+      ElMessage.success('库存更新成功')
+      editingProductId.value = null
+      loadProducts()
+    }
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('更新库存失败：' + (error.response?.data?.message || error.message))
+  } finally {
+    updatingStock.value = false
+  }
 }
 
 onMounted(() => {

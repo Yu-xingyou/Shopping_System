@@ -44,12 +44,24 @@ public class OrderController {
         return Result.success(result);
     }
     
+    /**
+     * 根据用户ID查询订单列表
+     * 
+     * @param userId 用户ID
+     * @return Result 返回该用户的订单列表
+     */
     @GetMapping("/list")
     public Result list(@RequestParam String userId) {
         List<Order> orders = orderService.findByUserId(userId);
         return Result.success(orders);
     }
     
+    /**
+     * 根据订单ID查询订单详情
+     * 
+     * @param id 订单ID
+     * @return Result 返回订单详情信息，如果订单不存在则返回404错误
+     */
     @GetMapping("/{id}")
     public Result getById(@PathVariable Integer id) {
         Order order = orderService.findById(id);
@@ -59,6 +71,14 @@ public class OrderController {
         return Result.success(order);
     }
     
+    /**
+     * 更新订单状态(仅员工可操作)
+     * 
+     * @param id 订单ID
+     * @param status 新的订单状态(0-6)
+     * @param staffId 员工ID
+     * @return Result 返回更新结果,成功返回"订单状态更新成功",失败返回错误信息
+     */
     @PutMapping("/{id}/status")
     public Result updateStatus(
             @PathVariable Integer id, 
@@ -86,6 +106,14 @@ public class OrderController {
         }
     }
     
+    /**
+     * 取消订单(支持员工和用户两种角色)
+     * 
+     * @param id 订单ID
+     * @param staffId 员工ID(可选,员工取消时传入)
+     * @param userId 用户ID(可选,用户取消时传入)
+     * @return Result 返回取消结果,成功返回"订单已取消",失败返回错误信息
+     */
     @PostMapping("/{id}/cancel")
     public Result cancel(
             @PathVariable Integer id,

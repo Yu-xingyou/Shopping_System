@@ -31,8 +31,8 @@
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
-              {{ row.status === 1 ? '正常' : '禁用' }}
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -84,7 +84,8 @@
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="staffForm.status">
             <el-radio :label="1">正常</el-radio>
-            <el-radio :label="0">禁用</el-radio>
+            <el-radio :label="2">冻结</el-radio>
+            <el-radio :label="3">离职</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -254,6 +255,24 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   currentPage.value = val
   loadStaffs()
+}
+
+const getStatusType = (status) => {
+  const statusMap = {
+    1: 'success',
+    2: 'warning',
+    3: 'info'
+  }
+  return statusMap[status] || 'info'
+}
+
+const getStatusText = (status) => {
+  const statusMap = {
+    1: '正常',
+    2: '冻结',
+    3: '离职'
+  }
+  return statusMap[status] || '未知'
 }
 
 onMounted(() => {

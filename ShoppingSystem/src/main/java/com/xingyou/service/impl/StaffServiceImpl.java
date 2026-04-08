@@ -28,11 +28,26 @@ public class StaffServiceImpl implements StaffService {
             throw new BusinessException(401, "密码错误");
         }
         
-        if (staff.getStatus() != null && staff.getStatus() != 1) {
-            throw new BusinessException(403, "账号已被禁用");
+        if (staff.getStatus() == null || staff.getStatus() != 1) {
+            String statusMsg = getStatusMessage(staff.getStatus());
+            throw new BusinessException(403, "登录失败：" + statusMsg);
         }
         
         return staff;
+    }
+    
+    private String getStatusMessage(Integer status) {
+        if (status == null) {
+            return "账号状态异常";
+        }
+        switch (status) {
+            case 2:
+                return "账号已冻结，无法登录";
+            case 3:
+                return "账号已离职，无法登录";
+            default:
+                return "账号状态异常";
+        }
     }
     
     @Override

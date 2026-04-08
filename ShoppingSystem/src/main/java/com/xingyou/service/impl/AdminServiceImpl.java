@@ -88,8 +88,8 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(404, "员工不存在");
         }
         
-        if (staff.getStatus() != null && (staff.getStatus() < 0 || staff.getStatus() > 1)) {
-            throw new BusinessException(400, "员工状态必须是 0 或 1");
+        if (staff.getStatus() != null && (staff.getStatus() < 1 || staff.getStatus() > 3)) {
+            throw new BusinessException(400, "员工状态必须是 1（正常）、2（冻结）或 3（离职）");
         }
         
         adminMapper.updateStaff(staff);
