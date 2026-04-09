@@ -61,7 +61,7 @@
         <el-form-item label="订单状态">
           <el-select v-model="statusForm.status" placeholder="请选择订单状态" style="width: 100%">
             <el-option :label="'待付款'" :value="0" />
-            <el-option :label="'已付款'" :value="1" />
+            <el-option :label="'缺货等待'" :value="1" />
             <el-option :label="'已发货'" :value="2" />
             <el-option :label="'已完成'" :value="3" />
             <el-option :label="'已取消'" :value="4" />
@@ -205,7 +205,7 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const statusMap = {
     0: '待付款',
-    1: '已付款',
+    1: '缺货等待',
     2: '已发货',
     3: '已完成',
     4: '已取消'

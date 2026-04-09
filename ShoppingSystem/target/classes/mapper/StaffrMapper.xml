@@ -2,33 +2,52 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    员工数据访问层映射文件
+
+    提供员工登录、信息查询、更新等功能，
+    同时包含员工对用户管理的查询操作。
+-->
 <mapper namespace="com.xingyou.mapper.StaffMapper">
 
+    <!-- 新增员工 -->
     <insert id="insert" parameterType="com.xingyou.entity.people.Staff">
         INSERT INTO staff (staff_id, name, password, status)
         VALUES (#{staffId}, #{name}, #{password}, #{status})
     </insert>
 
+    <!-- 根据员工ID查询员工信息（用于业务逻辑） -->
     <select id="findByStaffId" resultType="com.xingyou.entity.people.Staff">
         SELECT * FROM staff WHERE staff_id = #{staffId}
     </select>
 
+    <!-- 根据员工ID查询员工信息（用于登录验证） -->
     <select id="findById" resultType="com.xingyou.entity.people.Staff">
         SELECT * FROM staff WHERE staff_id = #{staffId}
     </select>
 
+    <!-- 查询所有用户列表（员工权限） -->
     <select id="findAllUsers" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user
     </select>
 
+    <!-- 根据用户ID查询用户信息 -->
     <select id="findUserByUserId" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user WHERE user_id = #{userId}
     </select>
 
+    <!-- 根据用户名模糊查询用户 -->
     <select id="findUserByName" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user WHERE name LIKE CONCAT('%', #{name}, '%')
     </select>
 
+    <!--
+        选择性更新员工信息
+
+        只更新提供的非空字段，未提供的字段保持原值不变。
+        支持更新姓名、密码、状态三个字段。
+    -->
     <update id="update" parameterType="com.xingyou.entity.people.Staff">
         UPDATE staff
         <set>

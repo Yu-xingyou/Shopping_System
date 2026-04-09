@@ -2,50 +2,73 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    管理员数据访问层映射文件
+
+    提供管理员相关的数据库操作，包括管理员登录、信息管理，
+    以及管理员对用户、员工、订单的管理功能。
+-->
 <mapper namespace="com.xingyou.mapper.AdminMapper">
 
+    <!-- 新增管理员 -->
     <insert id="insert" parameterType="com.xingyou.entity.people.Admin">
         INSERT INTO admin (admin_id, name, password)
         VALUES (#{adminId}, #{name}, #{password})
     </insert>
 
+    <!-- 根据管理员ID查询管理员信息 -->
     <select id="findByAdminId" resultType="com.xingyou.entity.people.Admin">
         SELECT * FROM admin WHERE admin_id = #{adminId}
     </select>
 
+    <!-- 查询所有用户列表（管理员权限） -->
     <select id="findAllUsers" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user
     </select>
 
+    <!-- 根据用户ID查询用户信息 -->
     <select id="findUserByUserId" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user WHERE user_id = #{userId}
     </select>
 
+    <!-- 根据用户名模糊查询用户 -->
     <select id="findUserByName" resultType="com.xingyou.entity.people.User">
         SELECT * FROM user WHERE name LIKE CONCAT('%', #{name}, '%')
     </select>
 
+    <!-- 查询所有员工列表（管理员权限） -->
     <select id="findAllStaffs" resultType="com.xingyou.entity.people.Staff">
         SELECT * FROM staff
     </select>
 
+    <!-- 根据员工ID查询员工信息 -->
     <select id="findStaffByStaffId" resultType="com.xingyou.entity.people.Staff">
         SELECT * FROM staff WHERE staff_id = #{staffId}
     </select>
 
+    <!-- 根据员工姓名模糊查询员工 -->
     <select id="findStaffByName" resultType="com.xingyou.entity.people.Staff">
         SELECT * FROM staff WHERE name LIKE CONCAT('%', #{name}, '%')
     </select>
 
+    <!-- 查询所有订单列表（管理员权限） -->
     <select id="findAllOrders" resultType="com.xingyou.entity.shopping.Order">
         SELECT * FROM `order`
     </select>
 
+    <!-- 新增员工 -->
     <insert id="addStaff" parameterType="com.xingyou.entity.people.Staff">
         INSERT INTO staff (staff_id, name, password, status)
         VALUES (#{staffId}, #{name}, #{password}, #{status})
     </insert>
 
+    <!--
+        选择性更新员工信息
+
+        只更新提供的非空字段，未提供的字段保持原值不变。
+        支持更新姓名、密码、状态三个字段。
+    -->
     <update id="updateStaff" parameterType="com.xingyou.entity.people.Staff">
         UPDATE staff
         <set>
@@ -56,12 +79,19 @@
         WHERE staff_id = #{staffId}
     </update>
 
+    <!-- 更新商品库存（直接设置库存值） -->
     <update id="updateProductStock">
         UPDATE product
         SET stock = #{stock}
         WHERE id = #{id}
     </update>
 
+    <!--
+        选择性更新管理员信息
+
+        只更新提供的非空字段，未提供的字段保持原值不变。
+        支持更新姓名、密码两个字段。
+    -->
     <update id="update" parameterType="com.xingyou.entity.people.Admin">
         UPDATE admin
         <set>

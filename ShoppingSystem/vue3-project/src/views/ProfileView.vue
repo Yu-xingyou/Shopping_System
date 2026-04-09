@@ -23,6 +23,12 @@
           </el-radio-group>
         </el-form-item>
 
+        <el-form-item label="账户余额" v-if="isUser">
+          <el-input v-model="profileForm.money" disabled>
+            <template #append>元</template>
+          </el-input>
+        </el-form-item>
+
         <el-form-item label="修改密码">
           <el-input
             v-model="profileForm.password"
@@ -59,6 +65,7 @@ const profileForm = reactive({
   userId: '',
   name: '',
   sex: '',
+  money: 0,
   password: ''
 })
 
@@ -83,6 +90,7 @@ const loadUserProfile = () => {
     profileForm.userId = currentUser.value.userId || currentUser.value.staffId || currentUser.value.adminId
     profileForm.name = currentUser.value.name || ''
     profileForm.sex = currentUser.value.sex || '男'
+    profileForm.money = currentUser.value.money || 0
   } else {
     ElMessage.error('请先登录')
     router.push('/login')

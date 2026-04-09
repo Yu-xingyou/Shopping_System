@@ -229,7 +229,7 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const statusMap = {
     0: '待付款',
-    1: '已付款',
+    1: '缺货等待',
     2: '已发货',
     3: '已完成',
     4: '已取消'

@@ -2,12 +2,31 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    商品数据访问层映射文件
+
+    提供商品的查询功能，支持全量查询、条件筛选和单件查询，
+    条件查询支持按名称或分类进行模糊匹配，并按相关度排序。
+-->
 <mapper namespace="com.xingyou.mapper.ProductMapper">
 
+    <!-- 查询所有商品 -->
     <select id="findAll" resultType="com.xingyou.entity.shopping.Product">
         SELECT * FROM product
     </select>
 
+    <!--
+        根据条件动态查询商品
+
+        支持以下查询条件：
+        - id: 精确匹配商品ID
+        - name: 模糊匹配商品名称或分类
+
+        排序规则：
+        - 按名称匹配的相关度排序（名称完全匹配优先）
+        - 相同相关度按ID升序排列
+    -->
     <select id="findByCondition" resultType="com.xingyou.entity.shopping.Product">
         SELECT * FROM product
         <where>
@@ -28,6 +47,7 @@
         </if>
     </select>
 
+    <!-- 根据商品ID查询商品 -->
     <select id="findById" resultType="com.xingyou.entity.shopping.Product">
         SELECT * FROM product WHERE id = #{id}
     </select>
