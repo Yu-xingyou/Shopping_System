@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单数据访问层接口
@@ -132,4 +133,14 @@ public interface OrderMapper {
      * @param receiptImage 小票图片URL地址
      */
     void updateReceiptImage(@Param("id") Integer id, @Param("receiptImage") String receiptImage);
+    
+    /**
+     * 查询当月热销产品TOP N（按销售数量排序）
+     * 
+     * 统计当月已完成订单中各商品的销售数量，返回销量最高的前N个商品。
+     *
+     * @param limit 返回的商品数量限制
+     * @return 热销产品列表，包含商品ID、名称和销售数量
+     */
+    List<Map<String, Object>> getTopSellingProducts(@Param("limit") Integer limit);
 }

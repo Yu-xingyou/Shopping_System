@@ -159,4 +159,25 @@
         SET receipt_image = #{receiptImage}
         WHERE id = #{id}
     </update>
+
+    <!--
+        查询当月热销产品TOP N（按销售数量排序）
+
+        通过关联订单表和订单明细表，统计当月已完成订单中各商品的销售数量。
+        仅统计状态为3（已完成/已收货）且在本月内的订单。
+    -->
+    <select id="getTopSellingProducts" resultType="java.util.HashMap">
+        SELECT
+            oi.product_id AS productId,
+            oi.product_name AS productName,
+            SUM(oi.quantity) AS totalQuantity
+        FROM order_item oi
+        INNER JOIN `order` o ON oi.order_id = o.id
+        WHERE o.status = 3
+          AND o.finish_time >= DATE_FORMAT(NOW(), '%Y-%m-01')
+          AND o.finish_time &lt; DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
+        GROUP BY oi.product_id, oi.product_name
+        ORDER BY totalQuantity DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

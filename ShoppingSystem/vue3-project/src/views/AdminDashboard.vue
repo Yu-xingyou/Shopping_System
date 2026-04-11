@@ -33,6 +33,9 @@
           <el-col :span="6">
             <el-button type="danger" @click="navigateTo('/admin/revenue')" style="width: 100%">我的收益</el-button>
           </el-col>
+          <el-col :span="6">
+            <el-button type="primary" @click="navigateTo('/admin/hot-products')" style="width: 100%">热销产品统计</el-button>
+          </el-col>
         </el-row>
       </div>
     </el-card>

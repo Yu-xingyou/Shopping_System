@@ -98,6 +98,13 @@ watch(() => route.path, () => {
           >
             我的收益
           </RouterLink>
+          <RouterLink
+            v-if="currentUser?.role === 'admin'"
+            to="/admin/hot-products"
+            class="nav-item"
+          >
+            热销产品统计
+          </RouterLink>
           <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
         </div>
       </div>

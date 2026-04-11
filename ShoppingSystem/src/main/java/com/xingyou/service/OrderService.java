@@ -5,6 +5,7 @@ import com.xingyou.entity.shopping.OrderItem;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单服务层接口
@@ -113,4 +114,14 @@ public interface OrderService {
      * @param receiptImageUrl 小票图片URL地址
      */
     void confirmReceipt(Integer id, String userId, String receiptImageUrl);
+    
+    /**
+     * 查询当月热销产品TOP N
+     * 
+     * 统计当月已完成订单中各商品的销售数量，返回销量最高的前N个商品。
+     *
+     * @param limit 返回的商品数量限制，默认为10
+     * @return 热销产品列表，每个元素包含productId、productName和totalQuantity
+     */
+    List<Map<String, Object>> getTopSellingProducts(Integer limit);
 }

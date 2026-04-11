@@ -11,6 +11,7 @@ import UserOrderView from '../views/UserOrderView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import FavoritesView from '../views/FavoritesView.vue'
 import RevenueView from '../views/RevenueView.vue'
+import HotProductsView from '../views/HotProductsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -79,6 +80,12 @@ const router = createRouter({
       path: '/admin/revenue',
       name: 'admin-revenue',
       component: RevenueView,
+      meta: { requiresAuth: true, role: 'admin' }
+    },
+    {
+      path: '/admin/hot-products',
+      name: 'admin-hot-products',
+      component: HotProductsView,
       meta: { requiresAuth: true, role: 'admin' }
     },
   ],

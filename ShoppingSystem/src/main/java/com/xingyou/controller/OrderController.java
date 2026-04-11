@@ -305,4 +305,22 @@ public class OrderController {
         return orderItems;
     }
 
+    /**
+     * 查询当月热销产品TOP N
+     * 
+     * 统计当月已完成订单中各商品的销售数量，按销量降序排列。
+     *
+     * @param limit 可选参数，返回的商品数量限制，默认为10
+     * @return Result 返回热销产品列表，每个产品包含productId、productName和totalQuantity
+     */
+    @GetMapping("/top-selling")
+    public Result getTopSellingProducts(@RequestParam(required = false, defaultValue = "10") Integer limit) {
+        try {
+            List<Map<String, Object>> products = orderService.getTopSellingProducts(limit);
+            return Result.success(products);
+        } catch (Exception e) {
+            return Result.error(500, "查询热销产品失败：" + e.getMessage());
+        }
+    }
+
 }

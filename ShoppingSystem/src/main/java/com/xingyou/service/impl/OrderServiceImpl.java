@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -316,13 +317,27 @@ public class OrderServiceImpl implements OrderService {
      * @return String 生成的唯一订单号
      */
     private String generateOrderNum() {
-        // 格式化当前时间为14位时间戳（年月日时分秒）
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         
-        // 生成4位随机数（1000-9999），保证订单号的唯一性
         String random = String.valueOf(new Random().nextInt(9000) + 1000);
         
         return "O" + timestamp + random;
+    }
+
+    /**
+     * 查询当月热销产品TOP N
+     * 
+     * 统计当月已完成订单中各商品的销售数量，返回销量最高的前N个商品。
+     *
+     * @param limit 返回的商品数量限制，默认为10
+     * @return List<Map<String, Object>> 热销产品列表，每个元素包含productId、productName和totalQuantity
+     */
+    @Override
+    public List<Map<String, Object>> getTopSellingProducts(Integer limit) {
+        if (limit == null || limit <= 0) {
+            limit = 10;
+        }
+        return orderMapper.getTopSellingProducts(limit);
     }
 
 }
