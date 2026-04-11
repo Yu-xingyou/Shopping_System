@@ -100,4 +100,23 @@
         </set>
         WHERE admin_id = #{adminId}
     </update>
+
+    <!--
+        查询已完成订单的总收益（按收货时间范围筛选）
+
+        只统计状态为3（已完成/已收货）的订单总金额。
+        根据days参数按收货时间（finish_time）筛选时间范围：
+        - null: 查询全部
+        - 1: 1天内
+        - 7: 7天内
+        - 30: 一个月内
+    -->
+    <select id="getTotalRevenue" resultType="java.lang.Double">
+        SELECT IFNULL(SUM(total_amount), 0)
+        FROM `order`
+        WHERE status = 3
+        <if test="days != null">
+            AND finish_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+    </select>
 </mapper>

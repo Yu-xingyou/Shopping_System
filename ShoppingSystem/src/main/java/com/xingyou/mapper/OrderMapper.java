@@ -71,8 +71,12 @@ public interface OrderMapper {
      * @param id 订单ID
      * @param status 新的订单状态
      */
-    void updateStatus(@Param("id") Integer id, @Param("status") Integer status);
+    void updateStatus(Integer id, Integer status);
     
+    void updateStatusToDelivered(Integer id, Integer status);
+    
+    void updateStatusToFinished(Integer id, Integer status);
+
     /**
      * 更新用户余额
      * 
@@ -110,4 +114,14 @@ public interface OrderMapper {
      * @return 商品对象，不存在则返回null
      */
     com.xingyou.entity.shopping.Product findProductById(@Param("id") Integer id);
+    
+    /**
+     * 查询已完成订单的总收益（按时间范围筛选）
+     * 
+     * 只统计状态为3（已完成/已收货）的订单总金额。
+     *
+     * @param days 时间范围（天数），null表示查询全部
+     * @return 总收益金额，如果没有订单则返回0
+     */
+    Double getTotalRevenue(@Param("days") Integer days);
 }

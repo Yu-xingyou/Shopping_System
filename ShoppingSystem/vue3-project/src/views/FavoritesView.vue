@@ -1,9 +1,9 @@
 <template>
-  <div class="products-container">
-    <el-card class="products-card">
+  <div class="favorites-container">
+    <el-card class="favorites-card">
       <template #header>
         <div class="card-header">
-          <h2>商品列表</h2>
+          <h2>我的收藏</h2>
           <div style="display: flex; gap: 10px; align-items: center;">
             <el-badge :value="cartTotalQuantity" :hidden="cartTotalQuantity === 0" type="primary">
               <el-button type="primary" size="small" @click="showCartDialog">
@@ -18,103 +18,68 @@
             >
               提交订单
             </el-button>
-            <el-button
-              v-if="isUser"
-              type="warning"
-              size="small"
-              @click="goToFavorites"
-            >
-              我的收藏
+            <el-button type="primary" @click="goToProducts">
+              继续购物
             </el-button>
           </div>
         </div>
       </template>
 
-      <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <el-input
-          v-model="searchText"
-          placeholder="搜索商品（名称、种类）"
-          prefix-icon="Search"
-          style="width: 350px"
-          clearable
-          @keyup.enter="handleSearch"
-        />
-        <el-button type="primary" @click="handleSearch">查询</el-button>
-        <el-button @click="handleReset">重置</el-button>
+      <div v-if="loading" class="loading-wrapper">
+        <el-icon class="is-loading"><Loading /></el-icon>
+        <span>加载中...</span>
       </div>
 
-      <el-table :data="products" stripe style="width: 100%">
-        <el-table-column prop="id" label="商品 ID" width="100" />
-        <el-table-column prop="name" label="商品名称" width="150" />
-        <el-table-column prop="description" label="描述" min-width="200" />
-        <el-table-column prop="price" label="价格" width="120">
+      <el-empty
+        v-else-if="favorites.length === 0"
+        description="还没有收藏任何商品"
+      >
+        <el-button type="primary" @click="goToProducts">
+          去逛逛
+        </el-button>
+      </el-empty>
+
+      <el-table
+        v-else
+        :data="favorites"
+        stripe
+        style="width: 100%"
+        v-loading="loading"
+      >
+        <el-table-column prop="productId" label="商品 ID" width="100" />
+        <el-table-column label="商品名称" min-width="150">
           <template #default="{ row }">
-            ¥{{ row.price?.toFixed(2) || '0.00' }}
+            {{ getProductInfo(row.productId)?.name || '加载中...' }}
           </template>
         </el-table-column>
-        <el-table-column prop="stock" label="库存" width="180">
+        <el-table-column label="描述" min-width="200">
           <template #default="{ row }">
-            <div v-if="isAdmin && editingProductId === row.id">
-              <el-input-number
-                v-model="editingStock"
-                :min="0"
-                :max="9999"
-                size="small"
-                controls-position="right"
-                style="width: 100px"
-              />
-              <el-button
-                type="primary"
-                size="small"
-                @click="confirmUpdateStock(row)"
-                :loading="updatingStock"
-                style="margin-left: 5px"
-              >
-                确定
-              </el-button>
-              <el-button
-                size="small"
-                @click="cancelEditStock"
-                style="margin-left: 5px"
-              >
-                取消
-              </el-button>
-            </div>
-            <div v-else>
-              <el-tag :type="row.stock > 0 ? 'success' : 'danger'">
-                {{ row.stock || 0 }}
-              </el-tag>
-              <el-button
-                v-if="isAdmin"
-                type="primary"
-                link
-                size="small"
-                @click="startEditStock(row)"
-                style="margin-left: 8px"
-              >
-                修改
-              </el-button>
-            </div>
+            {{ getProductInfo(row.productId)?.description || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="分类" width="120" />
-        <el-table-column label="收藏" width="100" v-if="isUser || isGuest">
+        <el-table-column label="价格" width="120">
           <template #default="{ row }">
-            <el-button
-              :type="favoritedProducts.has(row.id) ? 'warning' : 'info'"
-              size="small"
-              :icon="favoritedProducts.has(row.id) ? 'Star' : 'StarFilled'"
-              @click="toggleFavorite(row)"
-              :loading="favoritingProducts.has(row.id)"
-            >
-              {{ favoritedProducts.has(row.id) ? '已收藏' : '收藏' }}
-            </el-button>
+            <span style="color: #f56c6c; font-weight: bold;">
+              ¥{{ getProductInfo(row.productId)?.price?.toFixed(2) || '0.00' }}
+            </span>
           </template>
         </el-table-column>
-        <el-table-column label="预购数量" width="180" v-if="isUser">
+        <el-table-column label="库存" width="120">
+          <template #default="{ row }">
+            <el-tag :type="(getProductInfo(row.productId)?.stock || 0) > 0 ? 'success' : 'danger'">
+              {{ getProductInfo(row.productId)?.stock || 0 }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="分类" width="120">
+          <template #default="{ row }">
+            {{ getProductInfo(row.productId)?.category || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="购买数量" width="180">
           <template #default="{ row }">
             <el-input-number
-              v-model="cart[row.id]"
+              v-model="cart[row.productId]"
               :min="0"
               :max="999"
               size="small"
@@ -124,19 +89,19 @@
             />
           </template>
         </el-table-column>
+        <el-table-column prop="createTime" label="收藏时间" width="180" />
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              type="danger"
+              size="small"
+              @click="removeFavorite(row)"
+            >
+              取消收藏
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
-
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
     </el-card>
 
     <el-dialog
@@ -268,65 +233,26 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { InfoFilled } from '@element-plus/icons-vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Loading, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/utill/request'
 
 const router = useRouter()
-const route = useRoute()
-const products = ref([])
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
-const searchText = ref('')
+const favorites = ref([])
+const products = ref({})
+const loading = ref(false)
 const currentUser = ref(null)
 const cart = reactive({})
 const cartDialogVisible = ref(false)
 const orderDialogVisible = ref(false)
 const submitting = ref(false)
-const editingProductId = ref(null)
-const editingStock = ref(0)
-const updatingStock = ref(false)
-const favoritedProducts = ref(new Set())
-const favoritingProducts = ref(new Set())
 const orderForm = ref({
   receiverName: '',
   receiverPhone: '',
   receiverAddress: '',
   remark: ''
-})
-
-const isAdmin = computed(() => {
-  return currentUser.value && currentUser.value.role === 'admin'
-})
-
-const isUser = computed(() => {
-  return currentUser.value && currentUser.value.role === 'user'
-})
-
-const isGuest = computed(() => {
-  return currentUser.value && currentUser.value.role === 'guest'
-})
-
-const cartItems = computed(() => {
-  return products.value
-    .filter(p => cart[p.id] && cart[p.id] > 0)
-    .map(p => ({
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      quantity: cart[p.id]
-    }))
-})
-
-const cartTotalQuantity = computed(() => {
-  return Object.values(cart).reduce((sum, qty) => sum + (qty || 0), 0)
-})
-
-const cartTotalAmount = computed(() => {
-  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 })
 
 const loadCurrentUser = () => {
@@ -365,82 +291,131 @@ const saveCartToStorage = () => {
   }
 }
 
-const loadProducts = async () => {
+const loadFavorites = async () => {
+  if (!currentUser.value || !currentUser.value.userId) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+
+  loading.value = true
   try {
-    const res = await request.get('/product/list', {
+    const res = await request.get('/favorite/list', {
       params: {
-        pageNum: currentPage.value,
-        pageSize: pageSize.value
+        userId: currentUser.value.userId
       }
     })
 
     if (res.code === 200) {
-      if (res.data.list) {
-        products.value = res.data.list
-        total.value = res.data.total
-      } else {
-        products.value = Array.isArray(res.data) ? res.data : []
-        total.value = products.value.length
-      }
+      favorites.value = Array.isArray(res.data) ? res.data : []
+      await loadProductDetails()
     }
   } catch (error) {
     console.error(error)
-    products.value = []
-    total.value = 0
+    ElMessage.error('加载收藏列表失败')
+    favorites.value = []
+  } finally {
+    loading.value = false
   }
 }
 
-const handleSearch = async () => {
+const loadProductDetails = async () => {
+  if (favorites.value.length === 0) {
+    return
+  }
+
   try {
-    const searchParams = {}
-    if (searchText.value.trim()) {
-      searchParams.name = searchText.value.trim()
-      searchParams.category = searchText.value.trim()
+    const productIds = favorites.value.map(fav => fav.productId)
+    const productMap = {}
+
+    for (const productId of productIds) {
+      try {
+        const res = await request.get(`/product/${productId}`)
+        if (res.code === 200 && res.data) {
+          productMap[productId] = res.data
+        }
+      } catch (error) {
+        console.error(`加载商品 ${productId} 失败:`, error)
+      }
     }
 
-    const res = await request.post('/product/search', searchParams, {
-      params: {
-        pageNum: currentPage.value,
-        pageSize: pageSize.value
+    products.value = productMap
+  } catch (error) {
+    console.error('加载商品信息失败:', error)
+  }
+}
+
+const getProductInfo = (productId) => {
+  return products.value[productId] || null
+}
+
+const removeFavorite = async (row) => {
+  ElMessageBox.confirm('确定要取消收藏该商品吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await request.delete('/favorite/remove', {
+        params: {
+          userId: currentUser.value.userId,
+          productId: row.productId
+        }
+      })
+
+      if (res.code === 200) {
+        ElMessage.success('已取消收藏')
+        loadFavorites()
+      }
+    } catch (error) {
+      console.error(error)
+      ElMessage.error('取消收藏失败')
+    }
+  }).catch(() => {
+    ElMessage.info('已取消操作')
+  })
+}
+
+const goToProducts = () => {
+  router.push('/products')
+}
+
+const cartItems = computed(() => {
+  return favorites.value
+    .filter(p => cart[p.productId] && cart[p.productId] > 0)
+    .map(p => {
+      const productInfo = products.value[p.productId]
+      return {
+        id: p.productId,
+        name: productInfo?.name || '未知商品',
+        price: productInfo?.price || 0,
+        quantity: cart[p.productId]
       }
     })
+})
 
-    if (res.code === 200) {
-      if (res.data.list) {
-        products.value = res.data.list
-        total.value = res.data.total
-      } else {
-        products.value = []
-        total.value = 0
-      }
-    }
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('搜索失败')
-    products.value = []
-    total.value = 0
-  }
-}
+const cartTotalQuantity = computed(() => {
+  return Object.values(cart).reduce((sum, qty) => sum + (qty || 0), 0)
+})
 
-const handleReset = () => {
-  searchText.value = ''
-  currentPage.value = 1
-  loadProducts()
-}
+const cartTotalAmount = computed(() => {
+  return cartItems.value.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+})
 
 const handleQuantityChange = (product) => {
-  if (!cart[product.id]) {
-    cart[product.id] = 0
+  if (!cart[product.productId]) {
+    cart[product.productId] = 0
   }
-  if (cart[product.id] < 0) {
-    cart[product.id] = 0
+  if (cart[product.productId] < 0) {
+    cart[product.productId] = 0
   }
 
   saveCartToStorage()
 
-  if (cart[product.id] > 0) {
+  const productInfo = products.value[product.productId]
+  if (cart[product.productId] > 0 && productInfo) {
     ElMessage.success({
-      message: `已将"${product.name}"加入购物车，共 ${cart[product.id]} 件`,
+      message: `已将"${productInfo.name}"加入购物车，共 ${cart[product.productId]} 件`,
       duration: 1500
     })
   }
@@ -461,11 +436,6 @@ const removeFromCart = (product) => {
 }
 
 const submitOrder = () => {
-  if (!isUser.value) {
-    ElMessage.warning('只有用户角色可以创建预购单')
-    return
-  }
-
   if (cartTotalQuantity.value === 0) {
     ElMessage.warning('请选择至少一件商品')
     return
@@ -512,9 +482,7 @@ const confirmOrder = async () => {
         message: '预购单创建成功！即将跳转到订单页面',
         duration: 2000
       })
-      Object.keys(cart).forEach(key => {
-        delete cart[key]
-      })
+      cart.value = {}
       localStorage.removeItem('shoppingCart')
       orderForm.value = {
         receiverName: '',
@@ -537,163 +505,6 @@ const confirmOrder = async () => {
   }
 }
 
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('currentUser')
-  localStorage.removeItem('shoppingCart')
-  ElMessage.success('已退出登录')
-  router.push('/')
-}
-
-const navigateTo = (path) => {
-  router.push(path)
-}
-
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  if (searchText.value.trim()) {
-    handleSearch()
-  } else {
-    loadProducts()
-  }
-}
-
-const handleCurrentChange = (val) => {
-  currentPage.value = val
-  if (searchText.value.trim()) {
-    handleSearch()
-  } else {
-    loadProducts()
-  }
-}
-
-const startEditStock = (row) => {
-  editingProductId.value = row.id
-  editingStock.value = row.stock
-}
-
-const cancelEditStock = () => {
-  editingProductId.value = null
-  editingStock.value = 0
-}
-
-const confirmUpdateStock = async (row) => {
-  if (editingStock.value < 0) {
-    ElMessage.error('库存数量不能为负数')
-    return
-  }
-
-  try {
-    updatingStock.value = true
-    const res = await request.put(`/admin/products/${row.id}/stock`, {
-      stock: editingStock.value
-    })
-
-    if (res.code === 200) {
-      ElMessage.success('库存更新成功')
-      editingProductId.value = null
-      loadProducts()
-    }
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('更新库存失败：' + (error.response?.data?.message || error.message))
-  } finally {
-    updatingStock.value = false
-  }
-}
-
-const goToFavorites = () => {
-  router.push('/favorites')
-}
-
-const loadFavoriteStatus = async () => {
-  if (!currentUser.value || currentUser.value.role !== 'user') {
-    favoritedProducts.value = new Set()
-    return
-  }
-
-  try {
-    const res = await request.get('/favorite/list', {
-      params: {
-        userId: currentUser.value.userId
-      }
-    })
-
-    if (res.code === 200 && Array.isArray(res.data)) {
-      const favoriteSet = new Set()
-      res.data.forEach(fav => {
-        favoriteSet.add(fav.productId)
-      })
-      favoritedProducts.value = favoriteSet
-    } else {
-      favoritedProducts.value = new Set()
-    }
-  } catch (error) {
-    console.error('加载收藏状态失败:', error)
-    favoritedProducts.value = new Set()
-  }
-}
-
-const toggleFavorite = async (product) => {
-  if (!currentUser.value) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
-
-  if (currentUser.value.role === 'guest') {
-    ElMessage.warning('游客无法使用收藏功能，请先登录')
-    router.push('/login')
-    return
-  }
-
-  if (currentUser.value.role !== 'user') {
-    ElMessage.warning('只有用户角色可以使用收藏功能')
-    return
-  }
-
-  if (favoritingProducts.value.has(product.id)) {
-    return
-  }
-
-  favoritingProducts.value.add(product.id)
-
-  try {
-    const isFavorited = favoritedProducts.value.has(product.id)
-
-    if (isFavorited) {
-      const res = await request.delete('/favorite/remove', {
-        params: {
-          userId: currentUser.value.userId,
-          productId: product.id
-        }
-      })
-
-      if (res.code === 200) {
-        favoritedProducts.value.delete(product.id)
-        ElMessage.success('已取消收藏')
-      }
-    } else {
-      const res = await request.post('/favorite/add', null, {
-        params: {
-          userId: currentUser.value.userId,
-          productId: product.id
-        }
-      })
-
-      if (res.code === 200) {
-        favoritedProducts.value.add(product.id)
-        ElMessage.success('收藏成功')
-      }
-    }
-  } catch (error) {
-    console.error(error)
-    ElMessage.error('操作失败：' + (error.response?.data?.message || error.message))
-  } finally {
-    favoritingProducts.value.delete(product.id)
-  }
-}
-
 watch(cart, () => {
   saveCartToStorage()
 }, { deep: true })
@@ -701,33 +512,18 @@ watch(cart, () => {
 onMounted(() => {
   loadCurrentUser()
   loadCartFromStorage()
-  loadProducts()
-  loadFavoriteStatus()
+  loadFavorites()
 })
-
-watch(() => route.path, (newPath, oldPath) => {
-  if (newPath !== oldPath) {
-    loadCurrentUser()
-    loadCartFromStorage()
-    loadFavoriteStatus()
-  }
-})
-
-watch(() => products.value, (newProducts) => {
-  if (newProducts.length > 0 && currentUser.value && currentUser.value.role === 'user') {
-    loadFavoriteStatus()
-  }
-}, { deep: true })
 </script>
 
 <style scoped>
-.products-container {
+.favorites-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
-.products-card {
+.favorites-card {
   margin-bottom: 20px;
 }
 
@@ -737,10 +533,18 @@ watch(() => products.value, (newProducts) => {
   align-items: center;
 }
 
-.pagination-container {
-  margin-top: 20px;
+.loading-wrapper {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: #909399;
+  gap: 15px;
+}
+
+.loading-wrapper .el-icon {
+  font-size: 40px;
 }
 
 .cart-footer {
@@ -838,4 +642,3 @@ watch(() => products.value, (newProducts) => {
   font-size: 13px;
 }
 </style>
-

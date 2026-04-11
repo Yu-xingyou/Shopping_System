@@ -10,4 +10,5 @@ public class Admin {
     private Integer adminId;
     private String name;
     private String password;
+    private Double wallet;
 }

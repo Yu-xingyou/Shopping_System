@@ -137,4 +137,18 @@ public interface AdminService {
      * @param admin 管理员对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      */
     void update(Integer adminId, Admin admin);
+    
+    /**
+     * 查询管理员总收益（按时间范围筛选）
+     * 
+     * 只统计状态为3（已完成/已收货）的订单总金额。
+     *
+     * @param days 时间范围（天数），可选参数：
+     *             - null: 查询全部时间
+     *             - 1: 1天内
+     *             - 7: 7天内
+     *             - 30: 一个月内
+     * @return Double 返回总收益金额，如果没有订单则返回0.0
+     */
+    Double getTotalRevenue(Integer days);
 }

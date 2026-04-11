@@ -190,8 +190,13 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         
-        // 更新订单状态
-        orderMapper.updateStatus(id, status);
+        if (status == 2 && order.getStatus() != 2) {
+            orderMapper.updateStatusToDelivered(id, status);
+        } else if (status == 3 && order.getStatus() != 3) {
+            orderMapper.updateStatusToFinished(id, status);
+        } else {
+            orderMapper.updateStatus(id, status);
+        }
     }
     
     /**
@@ -296,10 +301,8 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException(400, "只有已发货的订单才能确认收货");
         }
         
-        // 更新订单状态为已完成（状态3）
-        orderMapper.updateStatus(id, 3);
+        orderMapper.updateStatusToFinished(id, 3);
         
-        // 从用户余额中扣除订单金额，完成支付结算
         orderMapper.updateUserMoney(userId, -order.getTotalAmount());
     }
     

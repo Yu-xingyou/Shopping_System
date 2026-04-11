@@ -9,6 +9,8 @@ import OrdersView from '../views/OrdersView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 import UserOrderView from '../views/UserOrderView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import FavoritesView from '../views/FavoritesView.vue'
+import RevenueView from '../views/RevenueView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -65,6 +67,18 @@ const router = createRouter({
       path: '/admin/dashboard',
       name: 'AdminDashboard',
       component: AdminDashboard,
+      meta: { requiresAuth: true, role: 'admin' }
+    },
+    {
+      path: '/favorites',
+      name: 'favorites',
+      component: FavoritesView,
+      meta: { requiresAuth: true, role: 'user' }
+    },
+    {
+      path: '/admin/revenue',
+      name: 'admin-revenue',
+      component: RevenueView,
       meta: { requiresAuth: true, role: 'admin' }
     },
   ],

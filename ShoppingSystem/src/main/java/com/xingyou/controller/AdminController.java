@@ -243,5 +243,30 @@ public class AdminController {
             return Result.error(500, "更新失败：" + e.getMessage());
         }
     }
+    
+    /**
+     * 查询管理员总收益（按时间范围筛选）
+     * 
+     * @param days 查询参数，时间范围（天数）：
+     *             - 1: 1天内
+     *             - 7: 7天内
+     *             - 30: 一个月内
+     *             - null或不传: 全部时间
+     * @return Result 返回总收益金额
+     */
+    @GetMapping("/revenue")
+    public Result getRevenue(@RequestParam(required = false) Integer days) {
+        try {
+            Double revenue = adminService.getTotalRevenue(days);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("revenue", revenue);
+            result.put("days", days);
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(500, "查询收益失败：" + e.getMessage());
+        }
+    }
 
 }

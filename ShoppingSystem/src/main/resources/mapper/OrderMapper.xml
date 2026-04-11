@@ -85,6 +85,23 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 更新订单状态为已发货，记录发货时间（预购功能：发货时不扣款，不设置支付时间） -->
+    <update id="updateStatusToDelivered">
+        UPDATE `order`
+        SET status = #{status},
+            deliver_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新订单状态为已完成，记录支付时间和完成时间 -->
+    <update id="updateStatusToFinished">
+        UPDATE `order`
+        SET status = #{status},
+            pay_time = NOW(),
+            finish_time = NOW()
+        WHERE id = #{id}
+    </update>
+
     <!--
         更新用户余额
 
@@ -113,5 +130,26 @@
     <!-- 根据商品ID查询商品信息（用于库存检查） -->
     <select id="findProductById" resultType="com.xingyou.entity.shopping.Product">
         SELECT * FROM product WHERE id = #{id}
+    </select>
+
+    <!--
+        查询已完成订单的总收益（按收货时间范围筛选）
+
+        只统计状态为3（已完成/已收货）的订单总金额。
+        严格按收货时间（finish_time）筛选时间范围，仅统计已设置finish_time的订单。
+        根据days参数筛选时间范围：
+        - null: 查询全部（不限时间，但必须finish_time不为空）
+        - 1: 1天内
+        - 7: 7天内
+        - 30: 一个月内
+    -->
+    <select id="getTotalRevenue" resultType="java.lang.Double">
+        SELECT IFNULL(SUM(total_amount), 0)
+        FROM `order`
+        WHERE status = 3
+          AND finish_time IS NOT NULL
+        <if test="days != null">
+            AND finish_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
     </select>
 </mapper>

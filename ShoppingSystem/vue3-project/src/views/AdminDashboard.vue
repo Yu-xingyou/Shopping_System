@@ -29,6 +29,11 @@
             <el-button type="info" @click="navigateTo('/products')" style="width: 100%">商品管理</el-button>
           </el-col>
         </el-row>
+        <el-row :gutter="20" style="margin-top: 20px;">
+          <el-col :span="6">
+            <el-button type="danger" @click="navigateTo('/admin/revenue')" style="width: 100%">我的收益</el-button>
+          </el-col>
+        </el-row>
       </div>
     </el-card>
   </div>

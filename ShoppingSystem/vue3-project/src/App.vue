@@ -1,12 +1,55 @@
 <script setup>
-import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, watch, ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
+const router = useRouter()
+const currentUser = ref(null)
 
 // 判断是否显示导航栏
 const showNav = computed(() => {
   return route.path !== '/' && route.path !== '/login' && route.path !== '/register'
+})
+
+const loadCurrentUser = () => {
+  try {
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      currentUser.value = JSON.parse(savedUser)
+    } else {
+      currentUser.value = null
+    }
+  } catch (error) {
+    console.error('解析用户信息失败:', error)
+    currentUser.value = null
+  }
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('currentUser')
+  localStorage.removeItem('shoppingCart')
+  ElMessage.success('已退出登录')
+  router.push('/')
+}
+
+const goToProfile = () => {
+  if (currentUser.value?.role === 'user') {
+    router.push('/profile')
+  }
+}
+
+const navigateToRevenue = () => {
+  router.push('/admin/revenue')
+}
+
+onMounted(() => {
+  loadCurrentUser()
+})
+
+watch(() => route.path, () => {
+  loadCurrentUser()
 })
 </script>
 
@@ -48,6 +91,13 @@ const showNav = computed(() => {
           >
             用户管理
           </RouterLink>
+          <RouterLink
+            v-if="currentUser?.role === 'admin'"
+            to="/admin/revenue"
+            class="nav-item revenue-link"
+          >
+            我的收益
+          </RouterLink>
           <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
         </div>
       </div>
@@ -59,63 +109,16 @@ const showNav = computed(() => {
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      currentUser: null
-    }
-  },
-  created() {
-    this.loadCurrentUser()
-    this.$watch(
-      () => this.$route.path,
-      () => {
-        this.loadCurrentUser()
-      }
-    )
-  },
-  methods: {
-    loadCurrentUser() {
-      try {
-        const savedUser = localStorage.getItem('currentUser')
-        if (savedUser) {
-          this.currentUser = JSON.parse(savedUser)
-        } else {
-          this.currentUser = null
-        }
-      } catch (error) {
-        console.error('解析用户信息失败:', error)
-        this.currentUser = null
-      }
-    },
-    goToProfile() {
-      if (!this.currentUser || !this.currentUser.role) {
-        this.$router.push('/login')
-      } else {
-        this.$router.push('/profile')
-      }
-    },
-    handleLogout() {
-      localStorage.removeItem('currentUser')
-      localStorage.removeItem('token')
-      this.$router.push('/')
-      this.currentUser = null
-    }
-  }
-}
-</script>
-
 <style scoped>
 .app-container {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 1rem 2rem;
+  padding: 15px 30px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -130,29 +133,23 @@ export default {
 .user-info {
   display: flex;
   align-items: center;
+  color: white;
   font-size: 16px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s;
-  padding: 5px 10px;
-  border-radius: 4px;
-}
-
-.user-info:hover {
-  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .nav-links {
   display: flex;
-  align-items: center;
   gap: 20px;
+  align-items: center;
 }
 
 .nav-item {
   color: white;
   text-decoration: none;
+  font-size: 15px;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.3s;
 }
 
@@ -160,7 +157,22 @@ export default {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
+.nav-item.router-link-active {
+  background-color: rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+}
+
+.revenue-link {
+  background-color: rgba(245, 108, 108, 0.3);
+  font-weight: 500;
+}
+
+.revenue-link:hover {
+  background-color: rgba(245, 108, 108, 0.5) !important;
+}
+
 .main-content {
-  padding: 20px;
+  flex: 1;
+  background-color: #f5f7fa;
 }
 </style>
