@@ -35,6 +35,13 @@
             <el-button
               type="primary"
               size="small"
+              @click="viewOrderDetail(row)"
+            >
+              查看详情
+            </el-button>
+            <el-button
+              type="primary"
+              size="small"
               @click="showStatusDialog(row)"
             >
               修改状态
@@ -51,6 +58,64 @@
         </el-table-column>
       </el-table>
     </el-card>
+
+    <el-dialog
+      v-model="detailDialogVisible"
+      title="订单详情"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="currentOrder" class="order-detail">
+        <el-descriptions title="订单基本信息" :column="2" border>
+          <el-descriptions-item label="订单 ID">{{ currentOrder.id }}</el-descriptions-item>
+          <el-descriptions-item label="订单号">{{ currentOrder.orderNum }}</el-descriptions-item>
+          <el-descriptions-item label="用户 ID">{{ currentOrder.userId }}</el-descriptions-item>
+          <el-descriptions-item label="订单金额">
+            <span style="color: #f56c6c; font-weight: bold; font-size: 16px;">
+              ¥{{ currentOrder.totalAmount?.toFixed(2) }}
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="订单状态">
+            <el-tag :type="getStatusType(currentOrder.status)">
+              {{ getStatusText(currentOrder.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="收货人">{{ currentOrder.receiverName }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ currentOrder.receiverPhone }}</el-descriptions-item>
+          <el-descriptions-item label="收货地址" :span="2">{{ currentOrder.receiverAddress }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间">{{ currentOrder.createTime }}</el-descriptions-item>
+          <el-descriptions-item label="完成时间">{{ currentOrder.finishTime || '未完成' }}</el-descriptions-item>
+          <el-descriptions-item label="备注" :span="2">{{ currentOrder.remark || '无' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <div v-if="orderItems.length > 0" class="order-items-section">
+          <h3 style="margin: 20px 0 10px 0; color: #606266;">订单商品</h3>
+          <el-table :data="orderItems" stripe size="small">
+            <el-table-column prop="productName" label="商品名称" min-width="200" />
+            <el-table-column prop="productPrice" label="单价" width="120" align="right">
+              <template #default="{ row }">
+                <span style="color: #f56c6c;">¥{{ row.productPrice?.toFixed(2) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="quantity" label="数量" width="100" align="center" />
+            <el-table-column label="小计" width="120" align="right">
+              <template #default="{ row }">
+                <span style="color: #f56c6c; font-weight: bold;">
+                  ¥{{ (row.productPrice * row.quantity).toFixed(2) }}
+                </span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div v-else style="text-align: center; padding: 20px; color: #999;">
+          暂无商品信息
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="detailDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog
       v-model="statusDialogVisible"
@@ -91,6 +156,9 @@ const statusForm = ref({
   orderId: null,
   status: null
 })
+const detailDialogVisible = ref(false)
+const currentOrder = ref(null)
+const orderItems = ref([])
 
 const isStaffOrAdmin = computed(() => {
   return currentUser.value && (currentUser.value.role === 'staff' || currentUser.value.role === 'admin')
@@ -123,6 +191,21 @@ const loadOrders = async () => {
     console.error(error)
     ElMessage.error('加载订单失败')
     orders.value = []
+  }
+}
+
+const viewOrderDetail = async (row) => {
+  currentOrder.value = row
+  orderItems.value = []
+  detailDialogVisible.value = true
+
+  try {
+    const res = await request.get(`/order/${row.id}/items`)
+    if (res.code === 200) {
+      orderItems.value = Array.isArray(res.data) ? res.data : []
+    }
+  } catch (error) {
+    console.error('加载订单商品失败:', error)
   }
 }
 
@@ -234,6 +317,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.order-detail {
+  padding: 10px;
+}
+
+.order-items-section {
+  margin-top: 20px;
 }
 </style>
 

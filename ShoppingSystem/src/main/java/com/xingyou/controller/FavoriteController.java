@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 收藏控制器
+ * 提供收藏相关的REST API接口，包括查询收藏、添加收藏、取消收藏等功能
+ */
 @RequestMapping("/favorite")
 @RestController
 public class FavoriteController {
@@ -16,6 +20,12 @@ public class FavoriteController {
     @Resource
     private FavoriteService favoriteService;
     
+    /**
+     * 查询用户收藏列表
+     *
+     * @param userId 用户ID
+     * @return Result 返回收藏列表
+     */
     @GetMapping("/list")
     public Result getFavorites(@RequestParam String userId) {
         if (userId == null || userId.trim().isEmpty()) {
@@ -30,6 +40,13 @@ public class FavoriteController {
         }
     }
     
+    /**
+     * 添加收藏
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @return Result 返回操作结果
+     */
     @PostMapping("/add")
     public Result addFavorite(@RequestParam String userId, @RequestParam Integer productId) {
         if (userId == null || userId.trim().isEmpty()) {
@@ -49,6 +66,13 @@ public class FavoriteController {
         }
     }
     
+    /**
+     * 取消收藏
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @return Result 返回操作结果
+     */
     @DeleteMapping("/remove")
     public Result removeFavorite(@RequestParam String userId, @RequestParam Integer productId) {
         if (userId == null || userId.trim().isEmpty()) {
@@ -68,6 +92,13 @@ public class FavoriteController {
         }
     }
     
+    /**
+     * 检查用户是否已收藏该商品
+     *
+     * @param userId 用户ID
+     * @param productId 商品ID
+     * @return Result 返回是否已收藏的布尔值
+     */
     @GetMapping("/check")
     public Result checkFavorite(@RequestParam String userId, @RequestParam Integer productId) {
         if (userId == null || userId.trim().isEmpty()) {
