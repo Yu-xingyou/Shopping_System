@@ -124,4 +124,12 @@ public interface OrderMapper {
      * @return 总收益金额，如果没有订单则返回0
      */
     Double getTotalRevenue(@Param("days") Integer days);
+    
+    /**
+     * 更新订单的小票图片URL
+     *
+     * @param id 订单ID
+     * @param receiptImage 小票图片URL地址
+     */
+    void updateReceiptImage(@Param("id") Integer id, @Param("receiptImage") String receiptImage);
 }

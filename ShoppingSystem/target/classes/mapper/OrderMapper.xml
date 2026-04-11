@@ -152,4 +152,11 @@
             AND finish_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
         </if>
     </select>
+
+    <!-- 更新订单的小票图片URL -->
+    <update id="updateReceiptImage">
+        UPDATE `order`
+        SET receipt_image = #{receiptImage}
+        WHERE id = #{id}
+    </update>
 </mapper>

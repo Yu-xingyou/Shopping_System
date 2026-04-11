@@ -278,28 +278,28 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param id 订单ID，用于指定需要确认收货的订单
      * @param userId 用户ID，用于验证操作用户是否为订单所有者
+     * @param receiptImageUrl 小票图片URL地址
      * @throws BusinessException 当验证失败时抛出业务异常：
      *         - 404: 订单不存在
      *         - 403: 无权确认该订单（非订单所有者）
      *         - 400: 只有已发货的订单才能确认收货
      */
     @Override
-    public void confirmReceipt(Integer id, String userId) {
-        // 验证订单是否存在
+    public void confirmReceipt(Integer id, String userId, String receiptImageUrl) {
         Order order = orderMapper.findById(id);
         if (order == null) {
             throw new BusinessException(404, "订单不存在");
         }
         
-        // 验证用户权限，确保只能确认自己的订单
         if (!order.getUserId().equals(userId)) {
             throw new BusinessException(403, "无权确认该订单");
         }
         
-        // 验证订单状态，只有已发货的订单才能确认收货
         if (order.getStatus() != 2) {
             throw new BusinessException(400, "只有已发货的订单才能确认收货");
         }
+        
+        orderMapper.updateReceiptImage(id, receiptImageUrl);
         
         orderMapper.updateStatusToFinished(id, 3);
         

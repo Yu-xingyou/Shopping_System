@@ -21,3 +21,10 @@ mybatis:
     map-underscore-to-camel-case: true
 server:
   port: 8080
+
+#阿里云OSS
+aliyun:
+  oss:
+    endpoint: https://oss-cn-beijing.aliyuncs.com
+    bucketName: shopping-exam
+    region: cn-beijing

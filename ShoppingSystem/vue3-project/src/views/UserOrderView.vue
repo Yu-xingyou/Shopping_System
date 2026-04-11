@@ -44,7 +44,7 @@
               v-if="row.status === 2"
               type="success"
               size="small"
-              @click="confirmReceipt(row)"
+              @click="showConfirmDialog(row)"
             >
               确认收货
             </el-button>
@@ -77,6 +77,7 @@
           <el-descriptions-item label="联系电话">{{ currentOrder.receiverPhone }}</el-descriptions-item>
           <el-descriptions-item label="收货地址" :span="2">{{ currentOrder.receiverAddress }}</el-descriptions-item>
           <el-descriptions-item label="创建时间">{{ currentOrder.createTime }}</el-descriptions-item>
+          <el-descriptions-item label="完成时间">{{ currentOrder.finishTime || '未完成' }}</el-descriptions-item>
           <el-descriptions-item label="备注" :span="2">{{ currentOrder.remark || '无' }}</el-descriptions-item>
         </el-descriptions>
 
@@ -108,18 +109,84 @@
         <el-button @click="detailDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="confirmDialogVisible"
+      title="确认收货"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="currentOrderForConfirm" class="confirm-receipt-container">
+        <el-alert
+          title="请上传购物小票照片"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 20px;"
+        >
+          <template #default>
+            <p>上传小票照片后，订单将标记为已完成，并将从您的账户扣除 ¥{{ currentOrderForConfirm.totalAmount?.toFixed(2) }}</p>
+          </template>
+        </el-alert>
+
+        <el-upload
+          ref="uploadRef"
+          class="upload-demo"
+          drag
+          action="#"
+          :auto-upload="false"
+          :on-change="handleFileChange"
+          :on-remove="handleFileRemove"
+          :limit="1"
+          accept="image/*"
+        >
+          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+          <div class="el-upload__text">
+            拖拽文件到此处或 <em>点击上传</em>
+          </div>
+          <template #tip>
+            <div class="el-upload__tip">
+              只能上传 jpg/png 文件，且不超过 5MB
+            </div>
+          </template>
+        </el-upload>
+
+        <div v-if="previewUrl" class="image-preview">
+          <p style="margin-top: 15px; color: #606266;">图片预览：</p>
+          <img :src="previewUrl" alt="小票预览" style="max-width: 100%; max-height: 300px; margin-top: 10px; border-radius: 4px;" />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="confirmDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="submitConfirmReceipt"
+          :loading="uploading"
+          :disabled="!selectedFile"
+        >
+          确认提交
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { UploadFilled } from '@element-plus/icons-vue'
 import request from '@/utill/request'
 
 const orders = ref([])
 const detailDialogVisible = ref(false)
 const currentOrder = ref(null)
 const orderItems = ref([])
+
+const confirmDialogVisible = ref(false)
+const currentOrderForConfirm = ref(null)
+const selectedFile = ref(null)
+const previewUrl = ref(null)
+const uploading = ref(false)
+const uploadRef = ref(null)
 
 const loadOrders = async () => {
   try {
@@ -188,31 +255,55 @@ const cancelOrder = async (row) => {
   })
 }
 
-const confirmReceipt = async (row) => {
-  ElMessageBox.confirm(`确认您已收到商品吗？确认后将从您的账户扣除 ¥${row.totalAmount?.toFixed(2)}，订单将完成。`, '确认收货', {
-    confirmButtonText: '确认收货',
-    cancelButtonText: '再等等',
-    type: 'success'
-  }).then(async () => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('currentUser'))
-      const res = await request.post(`/order/${row.id}/confirm`, null, {
-        params: {
-          userId: currentUser.userId
-        }
-      })
+const showConfirmDialog = (row) => {
+  currentOrderForConfirm.value = row
+  selectedFile.value = null
+  previewUrl.value = null
+  confirmDialogVisible.value = true
+}
 
-      if (res.code === 200) {
-        ElMessage.success('收货确认成功，订单已完成')
-        loadOrders()
+const handleFileChange = (file) => {
+  selectedFile.value = file.raw
+  previewUrl.value = URL.createObjectURL(file.raw)
+}
+
+const handleFileRemove = () => {
+  selectedFile.value = null
+  previewUrl.value = null
+}
+
+const submitConfirmReceipt = async () => {
+  if (!selectedFile.value) {
+    ElMessage.warning('请先上传小票照片')
+    return
+  }
+
+  uploading.value = true
+  try {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'))
+    const formData = new FormData()
+    formData.append('receiptImage', selectedFile.value)
+    formData.append('userId', currentUser.userId)
+
+    const res = await request.post(`/order/${currentOrderForConfirm.value.id}/confirm`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
       }
-    } catch (error) {
-      console.error(error)
-      ElMessage.error(error.response?.data?.message || '确认收货失败')
+    })
+
+    if (res.code === 200) {
+      ElMessage.success('确认收货成功，订单已完成')
+      confirmDialogVisible.value = false
+      selectedFile.value = null
+      previewUrl.value = null
+      loadOrders()
     }
-  }).catch(() => {
-    ElMessage.info('已取消操作')
-  })
+  } catch (error) {
+    console.error(error)
+    ElMessage.error(error.response?.data?.message || '确认收货失败')
+  } finally {
+    uploading.value = false
+  }
 }
 
 const getStatusType = (status) => {
@@ -265,5 +356,17 @@ onMounted(() => {
 
 .order-items-section {
   margin-top: 20px;
+}
+
+.confirm-receipt-container {
+  padding: 10px;
+}
+
+.upload-demo {
+  width: 100%;
+}
+
+.image-preview {
+  margin-top: 15px;
 }
 </style>

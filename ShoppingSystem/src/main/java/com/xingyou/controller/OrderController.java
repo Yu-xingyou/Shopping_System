@@ -5,8 +5,10 @@ import com.xingyou.entity.shopping.Order;
 import com.xingyou.entity.shopping.OrderItem;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.OrderService;
+import com.xingyou.utill.AliyunOSSOperator;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +20,9 @@ public class OrderController {
     
     @Resource
     private OrderService orderService;
+    
+    @Resource
+    private AliyunOSSOperator aliyunOSSOperator;
     
     /**
      * 创建新订单
@@ -144,13 +149,14 @@ public class OrderController {
     }
 
     /**
-     * 确认收货接口
+     * 确认收货接口（需上传小票照片）
      * 
      * 处理用户确认收货的业务逻辑，验证用户ID后调用订单服务完成收货操作。
      * 成功确认后订单状态将更新为已完成。
      *
      * @param id 订单ID，用于指定需要确认收货的订单
      * @param userId 用户ID，用于验证操作用户的合法性，不能为空或空字符串
+     * @param receiptImage 小票图片文件，必填参数
      * @return Result 返回操作结果，包含以下情况：
      *         - 参数校验失败时返回400错误码和提示信息
      *         - 业务异常时返回对应的错误码和异常信息
@@ -160,16 +166,21 @@ public class OrderController {
     @PostMapping("/{id}/confirm")
     public Result confirmReceipt(
             @PathVariable Integer id,
-            @RequestParam String userId) {
+            @RequestParam String userId,
+            @RequestParam("receiptImage") MultipartFile receiptImage) {
         
-        // 验证用户ID参数的合法性
         if (userId == null || userId.trim().isEmpty()) {
             return Result.error(400, "用户 ID 不能为空");
         }
         
-        // 调用订单服务执行确认收货操作，并处理可能的异常情况
+        if (receiptImage == null || receiptImage.isEmpty()) {
+            return Result.error(400, "请上传小票照片");
+        }
+        
         try {
-            orderService.confirmReceipt(id, userId);
+            String imageUrl = aliyunOSSOperator.upload(receiptImage.getBytes(), receiptImage.getOriginalFilename());
+            
+            orderService.confirmReceipt(id, userId, imageUrl);
             return Result.success("确认收货成功，订单已完成");
         } catch (BusinessException e) {
             return Result.error(e.getCode(), e.getMessage());

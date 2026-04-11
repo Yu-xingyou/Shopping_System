@@ -110,6 +110,7 @@ public interface OrderService {
      *
      * @param id 订单ID，用于指定需要确认收货的订单
      * @param userId 用户ID，用于验证操作用户是否为订单所有者
+     * @param receiptImageUrl 小票图片URL地址
      */
-    void confirmReceipt(Integer id, String userId);
+    void confirmReceipt(Integer id, String userId, String receiptImageUrl);
 }
