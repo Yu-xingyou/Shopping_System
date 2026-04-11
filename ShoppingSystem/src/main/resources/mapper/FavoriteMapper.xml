@@ -13,6 +13,10 @@
         SELECT * FROM user_favorite WHERE user_id = #{userId} AND product_id = #{productId}
     </select>
 
+    <select id="findByProductId" resultType="com.xingyou.entity.shopping.Favorite">
+        SELECT * FROM user_favorite WHERE product_id = #{productId} ORDER BY create_time DESC
+    </select>
+
     <insert id="insert" parameterType="com.xingyou.entity.shopping.Favorite">
         INSERT INTO user_favorite (user_id, product_id)
         VALUES (#{userId}, #{productId})

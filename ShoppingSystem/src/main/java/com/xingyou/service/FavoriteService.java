@@ -10,6 +10,8 @@ public interface FavoriteService {
     
     List<Favorite> findByUserId(String userId);
     
+    List<Favorite> findByProductId(Integer productId);
+    
     void addFavorite(String userId, Integer productId);
     
     void removeFavorite(String userId, Integer productId);

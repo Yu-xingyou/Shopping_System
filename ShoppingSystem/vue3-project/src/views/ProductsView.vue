@@ -5,6 +5,11 @@
         <div class="card-header">
           <h2>商品列表</h2>
           <div style="display: flex; gap: 10px; align-items: center;">
+            <el-badge v-if="isUser" :value="unreadCount" :hidden="unreadCount === 0" :max="99" type="danger">
+              <el-button circle @click="showNotificationDialog">
+                <el-icon><Bell /></el-icon>
+              </el-button>
+            </el-badge>
             <el-badge :value="cartTotalQuantity" :hidden="cartTotalQuantity === 0" type="primary">
               <el-button type="primary" size="small" @click="showCartDialog">
                 购物车
@@ -264,6 +269,54 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="notificationDialogVisible"
+      title="消息通知"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="notifications.length === 0" style="text-align: center; padding: 40px; color: #999;">
+        <el-empty description="暂无消息" />
+      </div>
+      <div v-else>
+        <div style="margin-bottom: 15px; text-align: right;">
+          <el-button type="primary" size="small" @click="handleMarkAllAsRead">
+            全部标记已读
+          </el-button>
+        </div>
+        <el-timeline>
+          <el-timeline-item
+            v-for="item in notifications"
+            :key="item.id"
+            :timestamp="item.createTime"
+            :type="item.isRead === 0 ? 'warning' : 'info'"
+            :color="item.isRead === 0 ? '#e6a23c' : '#909399'"
+            :hollow="item.isRead === 1"
+          >
+            <div class="notification-item" :class="{ 'unread': item.isRead === 0 }">
+              <div class="notification-content">
+                <el-icon v-if="item.isRead === 0" style="color: #e6a23c; margin-right: 5px;"><Bell /></el-icon>
+                <span>{{ item.content }}</span>
+              </div>
+              <el-button
+                v-if="item.isRead === 0"
+                type="primary"
+                link
+                size="small"
+                @click="handleMarkAsRead(item)"
+                style="margin-left: 10px;"
+              >
+                标记已读
+              </el-button>
+            </div>
+          </el-timeline-item>
+        </el-timeline>
+      </div>
+      <template #footer>
+        <el-button @click="notificationDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -271,7 +324,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { InfoFilled } from '@element-plus/icons-vue'
+import { Bell, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/utill/request'
 
 const router = useRouter()
@@ -291,6 +344,9 @@ const editingStock = ref(0)
 const updatingStock = ref(false)
 const favoritedProducts = ref(new Set())
 const favoritingProducts = ref(new Set())
+const notificationDialogVisible = ref(false)
+const notifications = ref([])
+const unreadCount = ref(0)
 const orderForm = ref({
   receiverName: '',
   receiverPhone: '',
@@ -694,6 +750,92 @@ const toggleFavorite = async (product) => {
   }
 }
 
+const loadUnreadCount = async () => {
+  if (!currentUser.value || currentUser.value.role !== 'user') {
+    unreadCount.value = 0
+    return
+  }
+
+  try {
+    const res = await request.get('/notification/unread-count', {
+      params: {
+        userId: currentUser.value.userId
+      }
+    })
+
+    if (res.code === 200) {
+      unreadCount.value = res.data.count || 0
+    }
+  } catch (error) {
+    console.error('加载未读数量失败:', error)
+  }
+}
+
+const showNotificationDialog = async () => {
+  notificationDialogVisible.value = true
+  await loadNotifications()
+}
+
+const loadNotifications = async () => {
+  if (!currentUser.value || currentUser.value.role !== 'user') {
+    return
+  }
+
+  try {
+    const res = await request.get('/notification/all', {
+      params: {
+        userId: currentUser.value.userId
+      }
+    })
+
+    if (res.code === 200) {
+      notifications.value = Array.isArray(res.data) ? res.data : []
+    }
+  } catch (error) {
+    console.error('加载通知失败:', error)
+  }
+}
+
+const handleMarkAsRead = async (item) => {
+  try {
+    const res = await request.post(`/notification/${item.id}/read`, null, {
+      params: {
+        userId: currentUser.value.userId
+      }
+    })
+
+    if (res.code === 200) {
+      item.isRead = 1
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+      ElMessage.success('已标记为已读')
+    }
+  } catch (error) {
+    console.error('标记已读失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
+const handleMarkAllAsRead = async () => {
+  try {
+    const res = await request.post('/notification/read-all', null, {
+      params: {
+        userId: currentUser.value.userId
+      }
+    })
+
+    if (res.code === 200) {
+      notifications.value.forEach(item => {
+        item.isRead = 1
+      })
+      unreadCount.value = 0
+      ElMessage.success('已全部标记为已读')
+    }
+  } catch (error) {
+    console.error('标记全部已读失败:', error)
+    ElMessage.error('操作失败')
+  }
+}
+
 watch(cart, () => {
   saveCartToStorage()
 }, { deep: true })
@@ -703,6 +845,7 @@ onMounted(() => {
   loadCartFromStorage()
   loadProducts()
   loadFavoriteStatus()
+  loadUnreadCount()
 })
 
 watch(() => route.path, (newPath, oldPath) => {
@@ -710,6 +853,7 @@ watch(() => route.path, (newPath, oldPath) => {
     loadCurrentUser()
     loadCartFromStorage()
     loadFavoriteStatus()
+    loadUnreadCount()
   }
 })
 
@@ -836,6 +980,24 @@ watch(() => products.value, (newProducts) => {
   border-radius: 4px;
   color: #e6a23c;
   font-size: 13px;
+}
+
+.notification-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.notification-item.unread {
+  font-weight: bold;
+  color: #e6a23c;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
 </style>
 

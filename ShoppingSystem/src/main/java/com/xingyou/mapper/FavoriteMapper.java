@@ -13,6 +13,8 @@ public interface FavoriteMapper {
     
     Favorite findByUserIdAndProductId(@Param("userId") String userId, @Param("productId") Integer productId);
     
+    List<Favorite> findByProductId(@Param("productId") Integer productId);
+    
     int insert(Favorite favorite);
     
     int deleteByUserIdAndProductId(@Param("userId") String userId, @Param("productId") Integer productId);

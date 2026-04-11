@@ -21,6 +21,11 @@ public class FavoriteServiceImpl implements FavoriteService {
     }
     
     @Override
+    public List<Favorite> findByProductId(Integer productId) {
+        return favoriteMapper.findByProductId(productId);
+    }
+    
+    @Override
     public void addFavorite(String userId, Integer productId) {
         if (userId == null || userId.trim().isEmpty()) {
             throw new BusinessException(400, "用户ID不能为空");

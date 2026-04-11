@@ -3,10 +3,15 @@ package com.xingyou.service.impl;
 import com.xingyou.entity.people.Admin;
 import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
+import com.xingyou.entity.shopping.Favorite;
 import com.xingyou.entity.shopping.Order;
+import com.xingyou.entity.shopping.Product;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.AdminMapper;
 import com.xingyou.service.AdminService;
+import com.xingyou.service.FavoriteService;
+import com.xingyou.service.NotificationService;
+import com.xingyou.service.ProductService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +22,15 @@ public class AdminServiceImpl implements AdminService {
 
     @Resource
     private AdminMapper adminMapper;
+    
+    @Resource
+    private FavoriteService favoriteService;
+    
+    @Resource
+    private NotificationService notificationService;
+    
+    @Resource
+    private ProductService productService;
 
     /**
      * 查询所有用户
@@ -218,17 +232,32 @@ public class AdminServiceImpl implements AdminService {
      */
     @Override
     public void updateProductStock(Integer id, Integer stock) {
-        // 验证商品ID不能为空
         if (id == null) {
             throw new BusinessException(400, "商品 ID 不能为空");
         }
         
-        // 验证库存数量的合法性，不能为null且不能为负数
         if (stock == null || stock < 0) {
             throw new BusinessException(400, "库存数量不能为负数");
         }
         
+        Product product = productService.findById(id);
+        if (product == null) {
+            throw new BusinessException(404, "商品不存在");
+        }
+        
+        Integer oldStock = product.getStock();
+        
         adminMapper.updateProductStock(id, stock);
+        
+        if (oldStock != null && oldStock == 0 && stock > 0) {
+            List<Favorite> favorites = favoriteService.findByProductId(id);
+            if (favorites != null && !favorites.isEmpty()) {
+                String productName = product.getName() != null ? product.getName() : "未知商品";
+                for (Favorite favorite : favorites) {
+                    notificationService.createRestockNotification(favorite.getUserId(), id, productName);
+                }
+            }
+        }
     }
 
     /**
