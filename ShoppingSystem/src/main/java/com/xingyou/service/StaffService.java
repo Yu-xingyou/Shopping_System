@@ -5,6 +5,7 @@ import com.xingyou.entity.people.User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 员工服务层接口
@@ -18,14 +19,16 @@ public interface StaffService {
     /**
      * 员工登录
      * 
-     * 验证员工ID、密码和账号状态，校验通过后返回员工信息。
+     * 验证员工ID、密码和账号状态，校验通过后生成JWT令牌并返回员工信息。
      * 只有状态为1（正常）的员工才能登录系统。
      *
      * @param staffId 员工ID，用于标识登录的员工
      * @param password 密码，用于验证员工身份
-     * @return Staff 登录成功时返回员工对象
+     * @return Map<String, Object> 登录成功时返回包含员工信息和JWT令牌的Map:
+     *         - staff: 员工对象
+     *         - token: JWT认证令牌
      */
-    Staff login(Integer staffId, String password);
+    Map<String, Object> login(Integer staffId, String password);
     
     /**
      * 更新员工信息

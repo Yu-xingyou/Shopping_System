@@ -1,4 +1,4 @@
-package com.xingyou.utill;
+package com.xingyou.util;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

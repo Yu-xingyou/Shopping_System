@@ -4,6 +4,7 @@ import com.xingyou.entity.people.User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户服务层接口
@@ -16,14 +17,16 @@ public interface UserService {
     /**
      * 用户登录
      * 
-     * 验证用户ID和密码的合法性，校验通过后返回用户信息。
+     * 验证用户ID和密码的合法性，校验通过后生成JWT令牌并返回用户信息。
      * 为安全起见，返回前会清除密码字段。
      *
      * @param userId 用户ID，用于标识登录的用户
      * @param password 密码，用于验证用户身份
-     * @return User 登录成功时返回用户对象（密码字段已清空）
+     * @return Map<String, Object> 登录成功时返回包含用户信息和JWT令牌的Map:
+     *         - user: 用户对象(密码已清除)
+     *         - token: JWT认证令牌
      */
-    User login(String userId, String password);
+    Map<String, Object> login(String userId, String password);
     
     /**
      * 用户注册

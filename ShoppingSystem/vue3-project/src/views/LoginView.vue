@@ -116,13 +116,25 @@ const handleLogin = async () => {
         const res = await request.post(url, requestData)
 
         if (res.code === 200) {
-          localStorage.setItem('token', 'mock_token')
-          // 确保 currentUser 包含 name 字段
-          const userData = {
-            ...res.data,
-            role: role,
-            name: res.data.name || res.data.userId || '用户'
+          let token = ''
+          let userData = {}
+
+          if (role === 'admin') {
+            token = res.data.token
+            userData = {
+              ...res.data.admin,
+              role: role
+            }
+          } else {
+            token = res.data.token || 'mock_token'
+            userData = {
+              ...res.data,
+              role: role,
+              name: res.data.name || res.data.userId || '用户'
+            }
           }
+
+          localStorage.setItem('token', token)
           localStorage.setItem('currentUser', JSON.stringify(userData))
           ElMessage.success('登录成功')
 

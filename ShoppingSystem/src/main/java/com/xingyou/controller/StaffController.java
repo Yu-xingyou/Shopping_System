@@ -9,6 +9,7 @@ import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/staff")
@@ -21,25 +22,22 @@ public class StaffController {
      * 员工登录接口
      * 
      * @param staff 员工信息对象，必须包含员工ID和密码
-     * @return Result 返回登录结果，成功时包含登录后的员工信息
+     * @return Result 返回登录结果，成功时包含员工信息和JWT令牌
      * @throws IllegalArgumentException 当员工ID为空或密码为空时抛出异常
      */
     @PostMapping("/login")
     public Result login(@RequestBody Staff staff) {
-        // 验证员工ID不能为空
         if (staff.getStaffId() == null) {
             throw new IllegalArgumentException("员工 ID 不能为空");
         }
         
-        // 验证密码不能为空
         if (staff.getPassword() == null || staff.getPassword().trim().isEmpty()) {
             throw new IllegalArgumentException("密码不能为空");
         }
         
-        // 调用服务层进行登录验证
-        Staff loginStaff = staffService.login(staff.getStaffId(), staff.getPassword());
+        Map<String, Object> loginResult = staffService.login(staff.getStaffId(), staff.getPassword());
         
-        return Result.success(loginStaff);
+        return Result.success(loginResult);
     }
     
     /**

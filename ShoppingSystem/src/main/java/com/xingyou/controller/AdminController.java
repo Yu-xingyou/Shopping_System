@@ -24,26 +24,23 @@ public class AdminController {
     /**
      * 管理员登录接口
      * 
-     * @param admin 管理员登录信息，包含管理员ID和密码
-     * @return Result 返回登录成功的管理员信息
+     * @param admin 管理员登录信息,包含管理员ID和密码
+     * @return Result 返回登录结果,包含管理员信息和JWT令牌
      * @throws IllegalArgumentException 当管理员ID为空或密码为空时抛出异常
      */
     @PostMapping("/login")
     public Result login(@RequestBody Admin admin) {
-        // 验证管理员ID不能为空
         if (admin.getAdminId() == null) {
             throw new IllegalArgumentException("管理员 ID 不能为空");
         }
         
-        // 验证密码不能为空
         if (admin.getPassword() == null || admin.getPassword().trim().isEmpty()) {
             throw new IllegalArgumentException("密码不能为空");
         }
         
-        // 调用服务层进行登录验证
-        Admin loginAdmin = adminService.login(admin.getAdminId(), admin.getPassword());
+        Map<String, Object> loginResult = adminService.login(admin.getAdminId(), admin.getPassword());
         
-        return Result.success(loginAdmin);
+        return Result.success(loginResult);
     }
     
     /**

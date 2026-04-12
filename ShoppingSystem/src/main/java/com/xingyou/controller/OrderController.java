@@ -5,7 +5,7 @@ import com.xingyou.entity.shopping.Order;
 import com.xingyou.entity.shopping.OrderItem;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.OrderService;
-import com.xingyou.utill.AliyunOSSOperator;
+import com.xingyou.util.AliyunOSSOperator;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

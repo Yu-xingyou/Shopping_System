@@ -7,6 +7,7 @@ import com.xingyou.entity.shopping.Order;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 管理员服务层接口
@@ -109,14 +110,16 @@ public interface AdminService {
     /**
      * 管理员登录
      * 
-     * 验证管理员ID和密码的合法性，校验通过后返回管理员信息。
+     * 验证管理员ID和密码的合法性,校验通过后生成JWT令牌并返回管理员信息。
      * 包括参数校验、用户存在性验证和密码匹配验证。
      *
-     * @param adminId 管理员ID，用于标识登录的管理员
-     * @param password 密码，用于验证管理员身份
-     * @return Admin 登录成功时返回管理员对象
+     * @param adminId 管理员ID,用于标识登录的管理员
+     * @param password 密码,用于验证管理员身份
+     * @return Map<String, Object> 登录成功时返回包含管理员信息和JWT令牌的Map:
+     *         - admin: 管理员对象(密码已清除)
+     *         - token: JWT认证令牌
      */
-    Admin login(Integer adminId, String password);
+    Map<String, Object> login(Integer adminId, String password);
     
     /**
      * 查询所有订单

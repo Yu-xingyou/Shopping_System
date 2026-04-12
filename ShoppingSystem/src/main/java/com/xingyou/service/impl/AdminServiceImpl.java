@@ -12,10 +12,13 @@ import com.xingyou.service.AdminService;
 import com.xingyou.service.FavoriteService;
 import com.xingyou.service.NotificationService;
 import com.xingyou.service.ProductService;
+import com.xingyou.util.JwtUtils;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -191,10 +194,8 @@ public class AdminServiceImpl implements AdminService {
 
     /**
      * 更新管理员信息
-     * 
      * 验证管理员是否存在后，选择性更新管理员的姓名和密码信息。
      * 只更新提供的非空字段，未提供的字段保持原值不变。
-     *
      * @param adminId 管理员ID，用于指定需要更新的管理员
      * @param admin 管理员对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      * @throws BusinessException 当管理员不存在时抛出404异常
@@ -263,21 +264,22 @@ public class AdminServiceImpl implements AdminService {
     /**
      * 管理员登录
      * 
-     * 验证管理员ID和密码的合法性，校验通过后返回管理员信息。
+     * 验证管理员ID和密码的合法性,校验通过后生成JWT令牌并返回管理员信息。
      * 包括参数校验、用户存在性验证和密码匹配验证。
      *
-     * @param adminId 管理员ID，用于标识登录的管理员
-     * @param password 密码，用于验证管理员身份
-     * @return Admin 登录成功时返回管理员对象
-     * @throws BusinessException 当验证失败时抛出业务异常：
+     * @param adminId 管理员ID,用于标识登录的管理员
+     * @param password 密码,用于验证管理员身份
+     * @return Map<String, Object> 登录成功时返回包含管理员信息和JWT令牌的Map:
+     *         - admin: 管理员对象(密码已清除)
+     *         - token: JWT认证令牌
+     * @throws BusinessException 当验证失败时抛出业务异常:
      *         - 400: 管理员ID不能为空
      *         - 400: 密码不能为空
      *         - 404: 管理员不存在
      *         - 401: 密码错误
      */
     @Override
-    public Admin login(Integer adminId, String password) {
-        // 验证管理员ID和密码参数不能为空
+    public Map<String, Object> login(Integer adminId, String password) {
         if (adminId == null) {
             throw new BusinessException(400, "管理员 ID 不能为空");
         }
@@ -285,18 +287,29 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(400, "密码不能为空");
         }
         
-        // 查询管理员并验证是否存在
         Admin admin = adminMapper.findByAdminId(adminId);
         if (admin == null) {
             throw new BusinessException(404, "管理员不存在");
         }
         
-        // 验证密码是否正确
         if (!admin.getPassword().equals(password)) {
             throw new BusinessException(401, "密码错误");
         }
         
-        return admin;
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("adminId", admin.getAdminId());
+        claims.put("name", admin.getName());
+        claims.put("role", "admin");
+        
+        String token = JwtUtils.generateJwt(claims);
+        
+        admin.setPassword(null);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("admin", admin);
+        result.put("token", token);
+        
+        return result;
     }
 
     /**

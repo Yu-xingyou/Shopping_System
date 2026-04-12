@@ -4,11 +4,14 @@ import com.xingyou.entity.people.User;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.UserMapper;
 import com.xingyou.service.UserService;
+import com.xingyou.util.JwtUtils;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -20,33 +23,44 @@ public class UserServiceImpl implements UserService {
     /**
      * 用户登录
      * 
-     * 验证用户ID和密码的合法性，校验通过后返回用户信息。
+     * 验证用户ID和密码的合法性，校验通过后生成JWT令牌并返回用户信息。
      * 为安全起见，返回前会清除密码字段。
      *
      * @param userId 用户ID，用于标识登录的用户
      * @param password 密码，用于验证用户身份
-     * @return User 登录成功时返回用户对象（密码字段已清空）
+     * @return Map<String, Object> 登录成功时返回包含用户信息和JWT令牌的Map:
+     *         - user: 用户对象(密码已清除)
+     *         - token: JWT认证令牌
      * @throws BusinessException 当验证失败时抛出业务异常：
      *         - 401: 账号不存在
      *         - 401: 密码错误
      */
     @Override
-    public User login(String userId, String password) {
-        // 查询用户信息并验证是否存在
+    public Map<String, Object> login(String userId, String password) {
         User user = userMapper.findByUserId(userId);
         
         if (user == null) {
             throw new BusinessException(401, "账号不存在");
         }
         
-        // 验证密码是否正确
         if (!password.equals(user.getPassword())) {
             throw new BusinessException(401, "密码错误");
         }
         
-        // 为保护用户隐私和系统安全，清除敏感密码信息
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getUserId());
+        claims.put("name", user.getName());
+        claims.put("role", "user");
+        
+        String token = JwtUtils.generateJwt(claims);
+        
         user.setPassword(null);
-        return user;
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("user", user);
+        result.put("token", token);
+        
+        return result;
     }
     
     /**

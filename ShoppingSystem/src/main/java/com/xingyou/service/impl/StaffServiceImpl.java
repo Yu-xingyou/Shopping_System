@@ -5,10 +5,13 @@ import com.xingyou.entity.people.User;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.StaffMapper;
 import com.xingyou.service.StaffService;
+import com.xingyou.util.JwtUtils;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class StaffServiceImpl implements StaffService {
@@ -19,38 +22,48 @@ public class StaffServiceImpl implements StaffService {
     /**
      * 员工登录
      * 
-     * 验证员工ID、密码和账号状态，校验通过后返回员工信息。
+     * 验证员工ID、密码和账号状态，校验通过后生成JWT令牌并返回员工信息。
      * 只有状态为1（正常）的员工才能登录系统。
      *
      * @param staffId 员工ID，用于标识登录的员工
      * @param password 密码，用于验证员工身份
-     * @return Staff 登录成功时返回员工对象
+     * @return Map<String, Object> 登录成功时返回包含员工信息和JWT令牌的Map:
+     *         - staff: 员工对象
+     *         - token: JWT认证令牌
      * @throws BusinessException 当验证失败时抛出业务异常：
      *         - 401: 员工ID不存在
      *         - 401: 密码错误
      *         - 403: 登录失败（账号被冻结、离职或状态异常）
      */
     @Override
-    public Staff login(Integer staffId, String password) {
-        // 查询员工信息并验证是否存在
+    public Map<String, Object> login(Integer staffId, String password) {
         Staff staff = staffMapper.findById(staffId);
         
         if (staff == null) {
             throw new BusinessException(401, "员工 ID 不存在");
         }
         
-        // 验证密码是否正确
         if (!password.equals(staff.getPassword())) {
             throw new BusinessException(401, "密码错误");
         }
         
-        // 验证员工状态，只有状态为1（正常）的员工才允许登录
         if (staff.getStatus() == null || staff.getStatus() != 1) {
             String statusMsg = getStatusMessage(staff.getStatus());
             throw new BusinessException(403, "登录失败：" + statusMsg);
         }
         
-        return staff;
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("staffId", staff.getStaffId());
+        claims.put("name", staff.getName());
+        claims.put("role", "staff");
+        
+        String token = JwtUtils.generateJwt(claims);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("staff", staff);
+        result.put("token", token);
+        
+        return result;
     }
     
     /**
