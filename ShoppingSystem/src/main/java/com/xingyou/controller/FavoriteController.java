@@ -4,7 +4,7 @@ import com.xingyou.common.Result;
 import com.xingyou.entity.shopping.Favorite;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.FavoriteService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 public class FavoriteController {
     
-    @Resource
+    @Autowired
     private FavoriteService favoriteService;
     
     /**

@@ -5,7 +5,7 @@ import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.UserMapper;
 import com.xingyou.service.UserService;
 import com.xingyou.util.JwtUtils;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -17,7 +17,7 @@ import java.util.Random;
 @Service
 public class UserServiceImpl implements UserService {
     
-    @Resource
+    @Autowired
     private UserMapper userMapper;
     
     /**

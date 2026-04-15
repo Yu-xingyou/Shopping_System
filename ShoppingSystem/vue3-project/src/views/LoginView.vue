@@ -125,12 +125,17 @@ const handleLogin = async () => {
               ...res.data.admin,
               role: role
             }
-          } else {
-            token = res.data.token || 'mock_token'
+          } else if (role === 'staff') {
+            token = res.data.token
             userData = {
-              ...res.data,
-              role: role,
-              name: res.data.name || res.data.userId || '用户'
+              ...res.data.staff,
+              role: role
+            }
+          } else {
+            token = res.data.token
+            userData = {
+              ...res.data.user,
+              role: role
             }
           }
 

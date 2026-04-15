@@ -6,7 +6,7 @@ import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.StaffMapper;
 import com.xingyou.service.StaffService;
 import com.xingyou.util.JwtUtils;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -16,7 +16,7 @@ import java.util.Map;
 @Service
 public class StaffServiceImpl implements StaffService {
     
-    @Resource
+    @Autowired
     private StaffMapper staffMapper;
     
     /**

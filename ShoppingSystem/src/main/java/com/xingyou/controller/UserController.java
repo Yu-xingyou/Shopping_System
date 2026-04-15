@@ -6,7 +6,7 @@ import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.OrderService;
 import com.xingyou.service.UserService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,10 +16,10 @@ import java.util.Map;
 @RestController
 public class UserController {
     
-    @Resource
+    @Autowired
     private UserService userService;
     
-    @Resource
+    @Autowired
     private OrderService orderService;
     
     /**

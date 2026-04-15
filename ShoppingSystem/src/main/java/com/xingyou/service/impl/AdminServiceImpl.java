@@ -13,7 +13,7 @@ import com.xingyou.service.FavoriteService;
 import com.xingyou.service.NotificationService;
 import com.xingyou.service.ProductService;
 import com.xingyou.util.JwtUtils;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -23,16 +23,16 @@ import java.util.Map;
 @Service
 public class AdminServiceImpl implements AdminService {
 
-    @Resource
+    @Autowired
     private AdminMapper adminMapper;
     
-    @Resource
+    @Autowired
     private FavoriteService favoriteService;
     
-    @Resource
+    @Autowired
     private NotificationService notificationService;
     
-    @Resource
+    @Autowired
     private ProductService productService;
 
     /**

@@ -7,7 +7,7 @@ import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.AdminService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,7 +18,7 @@ import java.util.Map;
 @RequestMapping("/admin")
 public class AdminController {
     
-    @Resource
+    @Autowired
     private AdminService adminService;
     
     /**

@@ -668,6 +668,12 @@ const loadFavoriteStatus = async () => {
     return
   }
 
+  if (!currentUser.value.userId) {
+    console.warn('用户ID不存在，无法加载收藏状态')
+    favoritedProducts.value = new Set()
+    return
+  }
+
   try {
     const res = await request.get('/favorite/list', {
       params: {
@@ -705,6 +711,12 @@ const toggleFavorite = async (product) => {
 
   if (currentUser.value.role !== 'user') {
     ElMessage.warning('只有用户角色可以使用收藏功能')
+    return
+  }
+
+  if (!currentUser.value.userId) {
+    ElMessage.error('用户信息异常，请重新登录')
+    router.push('/login')
     return
   }
 
@@ -756,6 +768,11 @@ const loadUnreadCount = async () => {
     return
   }
 
+  if (!currentUser.value.userId) {
+    unreadCount.value = 0
+    return
+  }
+
   try {
     const res = await request.get('/notification/unread-count', {
       params: {
@@ -781,6 +798,10 @@ const loadNotifications = async () => {
     return
   }
 
+  if (!currentUser.value.userId) {
+    return
+  }
+
   try {
     const res = await request.get('/notification/all', {
       params: {
@@ -797,6 +818,11 @@ const loadNotifications = async () => {
 }
 
 const handleMarkAsRead = async (item) => {
+  if (!currentUser.value.userId) {
+    ElMessage.error('用户信息异常，请重新登录')
+    return
+  }
+
   try {
     const res = await request.post(`/notification/${item.id}/read`, null, {
       params: {
@@ -816,6 +842,11 @@ const handleMarkAsRead = async (item) => {
 }
 
 const handleMarkAllAsRead = async () => {
+  if (!currentUser.value.userId) {
+    ElMessage.error('用户信息异常，请重新登录')
+    return
+  }
+
   try {
     const res = await request.post('/notification/read-all', null, {
       params: {

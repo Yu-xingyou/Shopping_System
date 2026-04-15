@@ -5,7 +5,7 @@ import com.github.pagehelper.PageInfo;
 import com.xingyou.entity.shopping.Product;
 import com.xingyou.mapper.ProductMapper;
 import com.xingyou.service.ProductService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,7 +15,7 @@ import java.util.Map;
 @Service
 public class ProductServiceImpl implements ProductService {
     
-    @Resource
+    @Autowired
     private ProductMapper productMapper;
     
     /**

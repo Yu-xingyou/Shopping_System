@@ -3,7 +3,7 @@ package com.xingyou.controller;
 import com.xingyou.common.Result;
 import com.xingyou.entity.shopping.Notification;
 import com.xingyou.service.NotificationService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,7 +18,7 @@ import java.util.Map;
 @RestController
 public class NotificationController {
 
-    @Resource
+    @Autowired
     private NotificationService notificationService;
 
     /**

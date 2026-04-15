@@ -6,7 +6,7 @@ import com.xingyou.entity.shopping.OrderItem;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.OrderMapper;
 import com.xingyou.service.OrderService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,7 +18,7 @@ import java.util.Random;
 @Service
 public class OrderServiceImpl implements OrderService {
     
-    @Resource
+    @Autowired
     private OrderMapper orderMapper;
     
     /**

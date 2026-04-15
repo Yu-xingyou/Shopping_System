@@ -5,7 +5,7 @@ import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.StaffService;
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,7 +15,7 @@ import java.util.Map;
 @RequestMapping("/staff")
 public class StaffController {
     
-    @Resource
+    @Autowired
     private StaffService staffService;
     
     /**
