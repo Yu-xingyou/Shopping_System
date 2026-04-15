@@ -12,19 +12,39 @@
 <mapper namespace="com.xingyou.mapper.StaffMapper">
 
     <!-- 新增员工 -->
-    <insert id="insert" parameterType="com.xingyou.entity.people.Staff">
-        INSERT INTO staff (staff_id, name, password, status)
-        VALUES (#{staffId}, #{name}, #{password}, #{status})
+    <insert id="insert" parameterType="com.xingyou.entity.people.User">
+        INSERT INTO staff (staff_id, name, password, email, phone, avatar, status, role)
+        VALUES (#{userId}, #{name}, #{password}, #{email}, #{phone}, #{avatar}, #{status}, #{role})
     </insert>
 
     <!-- 根据员工ID查询员工信息（用于业务逻辑） -->
-    <select id="findByStaffId" resultType="com.xingyou.entity.people.Staff">
-        SELECT * FROM staff WHERE staff_id = #{staffId}
+    <select id="findByStaffId" resultType="com.xingyou.entity.people.User">
+        SELECT
+            staff_id AS userId,
+            name,
+            password,
+            email,
+            phone,
+            avatar,
+            status,
+            1 AS role
+        FROM staff
+        WHERE staff_id = #{staffId}
     </select>
 
     <!-- 根据员工ID查询员工信息（用于登录验证） -->
-    <select id="findById" resultType="com.xingyou.entity.people.Staff">
-        SELECT * FROM staff WHERE staff_id = #{staffId}
+    <select id="findById" resultType="com.xingyou.entity.people.User">
+        SELECT
+            staff_id AS userId,
+            name,
+            password,
+            email,
+            phone,
+            avatar,
+            status,
+            1 AS role
+        FROM staff
+        WHERE staff_id = #{staffId}
     </select>
 
     <!-- 查询所有用户列表（员工权限） -->
@@ -46,15 +66,18 @@
         选择性更新员工信息
 
         只更新提供的非空字段，未提供的字段保持原值不变。
-        支持更新姓名、密码、状态三个字段。
+        支持更新姓名、密码、邮箱、手机、头像、状态等字段。
     -->
-    <update id="update" parameterType="com.xingyou.entity.people.Staff">
+    <update id="update" parameterType="com.xingyou.entity.people.User">
         UPDATE staff
         <set>
             <if test="name != null">name = #{name},</if>
             <if test="password != null">password = #{password},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
             <if test="status != null">status = #{status},</if>
         </set>
-        WHERE staff_id = #{staffId}
+        WHERE staff_id = #{userId}
     </update>
 </mapper>

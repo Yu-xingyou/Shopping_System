@@ -9,7 +9,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * JWT令牌验证拦截器
- * 用于拦截请求并验证JWT令牌的有效性
+ * 用于拦截请求并验证JWT令牌的有效性和权限
  */
 @Component
 public class TokenInterceptor implements HandlerInterceptor {
@@ -46,13 +46,55 @@ public class TokenInterceptor implements HandlerInterceptor {
             // 解析JWT令牌
             Claims claims = JwtUtils.parseJWT(token);
             
-            // 将解析出的用户信息存储到request属性中，供后续使用
+            // 将完整的claims存储到request属性中
             request.setAttribute("claims", claims);
             
-            // 可以继续传递用户ID等信息
+            // 提取用户ID
             String userId = claims.get("userId", String.class);
             if (userId != null) {
                 request.setAttribute("userId", userId);
+            }
+            
+            // 提取用户角色
+            Integer role = claims.get("role", Integer.class);
+            if (role != null) {
+                request.setAttribute("role", role);
+            }
+            
+            // 提取用户名（可选）
+            String name = claims.get("name", String.class);
+            if (name != null) {
+                request.setAttribute("userName", name);
+            }
+            
+            // 权限验证：根据请求路径验证角色权限
+            String requestURI = request.getRequestURI();
+            
+            // 管理员专属接口（只有role=2的管理员可以访问）
+            if (requestURI.startsWith("/admin/") && role != 2) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":403,\"message\":\"权限不足，仅管理员可访问\",\"data\":null}");
+                return false;
+            }
+            
+            // 员工专属接口（只有role=1的员工和role=2的管理员可以访问）
+            if (requestURI.startsWith("/staff/") && role != 1 && role != 2) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":403,\"message\":\"权限不足，仅员工或管理员可访问\",\"data\":null}");
+                return false;
+            }
+            
+            // 普通用户个人信息接口（只能查看/修改自己的信息）
+            if (requestURI.matches("/user/U\\d+") && request.getMethod().equals("GET")) {
+                String pathUserId = requestURI.substring(requestURI.lastIndexOf("/") + 1);
+                if (!pathUserId.equals(userId) && !isAdmin(role) && !isStaffOrAdmin(role)) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"code\":403,\"message\":\"无权查看其他用户信息\",\"data\":null}");
+                    return false;
+                }
             }
             
             return true;
@@ -63,5 +105,23 @@ public class TokenInterceptor implements HandlerInterceptor {
             response.getWriter().write("{\"code\":401,\"message\":\"令牌无效或已过期，请重新登录\",\"data\":null}");
             return false;
         }
+    }
+    
+    /**
+     * 判断是否为管理员
+     * @param role 用户角色
+     * @return true-是管理员，false-不是
+     */
+    private boolean isAdmin(Integer role) {
+        return role != null && role == 2;
+    }
+    
+    /**
+     * 判断是否为员工或管理员
+     * @param role 用户角色
+     * @return true-是员工或管理员，false-不是
+     */
+    private boolean isStaffOrAdmin(Integer role) {
+        return role != null && (role == 1 || role == 2);
     }
 }

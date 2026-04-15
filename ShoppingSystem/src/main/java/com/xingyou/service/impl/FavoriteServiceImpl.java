@@ -4,6 +4,7 @@ import com.xingyou.entity.shopping.Favorite;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.FavoriteMapper;
 import com.xingyou.service.FavoriteService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import java.util.List;
  * 收藏服务层实现类
  * 实现收藏管理的业务逻辑，包括添加收藏、取消收藏、查询收藏等功能
  */
+@Slf4j
 @Service
 public class FavoriteServiceImpl implements FavoriteService {
     
@@ -21,11 +23,13 @@ public class FavoriteServiceImpl implements FavoriteService {
     
     @Override
     public List<Favorite> findByUserId(String userId) {
+        log.debug("查询用户收藏列表 - userId: {}", userId);
         return favoriteMapper.findByUserId(userId);
     }
     
     @Override
     public List<Favorite> findByProductId(Integer productId) {
+        log.debug("查询商品收藏列表 - productId: {}", productId);
         return favoriteMapper.findByProductId(productId);
     }
     
@@ -45,6 +49,8 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     public void addFavorite(String userId, Integer productId) {
+        log.info("添加收藏请求 - userId: {}, productId: {}", userId, productId);
+        
         if (userId == null || userId.trim().isEmpty()) {
             throw new BusinessException(400, "用户ID不能为空");
         }
@@ -54,6 +60,7 @@ public class FavoriteServiceImpl implements FavoriteService {
         
         Favorite existing = favoriteMapper.findByUserIdAndProductId(userId, productId);
         if (existing != null) {
+            log.warn("添加收藏失败 - 商品已在收藏夹中: userId: {}, productId: {}", userId, productId);
             throw new BusinessException(400, "该商品已在收藏夹中");
         }
         
@@ -63,8 +70,11 @@ public class FavoriteServiceImpl implements FavoriteService {
         
         int rows = favoriteMapper.insert(favorite);
         if (rows != 1) {
+            log.error("添加收藏失败 - userId: {}, productId: {}", userId, productId);
             throw new BusinessException(500, "收藏失败，请稍后重试");
         }
+        
+        log.info("添加收藏成功 - userId: {}, productId: {}", userId, productId);
     }
     
     /**
@@ -81,6 +91,8 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     public void removeFavorite(String userId, Integer productId) {
+        log.info("取消收藏请求 - userId: {}, productId: {}", userId, productId);
+        
         if (userId == null || userId.trim().isEmpty()) {
             throw new BusinessException(400, "用户ID不能为空");
         }
@@ -90,8 +102,11 @@ public class FavoriteServiceImpl implements FavoriteService {
         
         int rows = favoriteMapper.deleteByUserIdAndProductId(userId, productId);
         if (rows != 1) {
+            log.warn("取消收藏失败 - 收藏记录不存在: userId: {}, productId: {}", userId, productId);
             throw new BusinessException(404, "收藏记录不存在");
         }
+        
+        log.info("取消收藏成功 - userId: {}, productId: {}", userId, productId);
     }
     
     /**
@@ -103,6 +118,7 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     public boolean isFavorited(String userId, Integer productId) {
+        log.debug("检查收藏状态 - userId: {}, productId: {}", userId, productId);
         Favorite favorite = favoriteMapper.findByUserIdAndProductId(userId, productId);
         return favorite != null;
     }

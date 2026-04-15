@@ -1,6 +1,5 @@
 package com.xingyou.service;
 
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +24,7 @@ public interface StaffService {
      * @param staffId 员工ID，用于标识登录的员工
      * @param password 密码，用于验证员工身份
      * @return Map<String, Object> 登录成功时返回包含员工信息和JWT令牌的Map:
-     *         - staff: 员工对象
+     *         - user: 员工用户对象
      *         - token: JWT认证令牌
      */
     Map<String, Object> login(Integer staffId, String password);
@@ -38,9 +37,9 @@ public interface StaffService {
      * 更新后会验证受影响的行数，确保操作成功。
      *
      * @param staffId 员工ID，用于指定需要更新的员工
-     * @param staff 员工对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
+     * @param staff 员工用户对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      */
-    void update(Integer staffId, Staff staff);
+    void update(Integer staffId, User staff);
     
     /**
      * 查询所有用户

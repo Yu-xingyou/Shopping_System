@@ -2,16 +2,16 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h2 class="login-title">欢迎登录购物系统</h2>
+        <h2 class="login-title">账号登录</h2>
         <el-button type="danger" size="small" @click="goBackToHome" style="margin-top: 10px;">
-          返回选择身份
+          返回首页
         </el-button>
       </div>
 
       <el-alert
         title="登录说明"
         type="info"
-        description="普通用户使用注册的账号登录，员工和管理员使用分配的账号登录。"
+        description="普通用户使用U开头的账号登录，员工和管理员使用数字ID登录。系统会自动识别您的身份。"
         show-icon
         style="margin-bottom: 20px"
       />
@@ -61,12 +61,11 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utill/request'
 
 const router = useRouter()
-const route = useRoute()
 const loginFormRef = ref(null)
 const loading = ref(false)
 
@@ -89,70 +88,45 @@ const handleLogin = async () => {
 
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
+      // 验证账号格式
+      if (!loginForm.userId.startsWith('U') && !/^\d+$/.test(loginForm.userId)) {
+        ElMessage.error('账号格式不正确：普通用户账号以U开头，员工/管理员使用数字ID')
+        return
+      }
+
       loading.value = true
       try {
-        const role = route.query.role || 'user'
-        let url = '/user/login'
-
-        if (role === 'staff') {
-          url = '/staff/login'
-        } else if (role === 'admin') {
-          url = '/admin/login'
-        }
-
-        const requestData = {
+        // 调用统一登录接口，后端自动识别角色
+        const res = await request.post('/user/login', {
+          userId: loginForm.userId,
           password: loginForm.password
-        }
-
-        // 根据角色传递不同的字段名
-        if (role === 'staff') {
-          requestData.staffId = loginForm.userId
-        } else if (role === 'admin') {
-          requestData.adminId = loginForm.userId
-        } else {
-          requestData.userId = loginForm.userId
-        }
-
-        const res = await request.post(url, requestData)
+        })
 
         if (res.code === 200) {
-          let token = ''
-          let userData = {}
+          const token = res.data.token
+          const userData = res.data.user
 
-          if (role === 'admin') {
-            token = res.data.token
-            userData = {
-              ...res.data.admin,
-              role: role
-            }
-          } else if (role === 'staff') {
-            token = res.data.token
-            userData = {
-              ...res.data.staff,
-              role: role
-            }
-          } else {
-            token = res.data.token
-            userData = {
-              ...res.data.user,
-              role: role
-            }
-          }
-
+          // 保存用户信息和token
           localStorage.setItem('token', token)
           localStorage.setItem('currentUser', JSON.stringify(userData))
           ElMessage.success('登录成功')
 
-          if (role === 'admin') {
+          // 根据用户角色跳转到不同页面
+          const userRole = userData.role
+          if (userRole === 2) {
+            // 管理员
             router.push('/admin/dashboard')
-          } else if (role === 'staff') {
+          } else if (userRole === 1) {
+            // 员工
             router.push('/products')
           } else {
+            // 普通用户
             router.push('/products')
           }
         }
       } catch (error) {
-        console.error(error)
+        console.error('登录失败:', error)
+        ElMessage.error('登录失败：' + (error.response?.data?.message || '账号或密码错误'))
       } finally {
         loading.value = false
       }

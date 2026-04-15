@@ -235,12 +235,11 @@ public class OrderController {
     private Order parseOrder(Map<String, Object> request) {
         Order order = new Order();
         
-        // 提取并设置订单的各项属性，仅处理非空值
         if (request.get("userId") != null) {
             order.setUserId((String) request.get("userId"));
         }
         if (request.get("totalAmount") != null) {
-            order.setTotalAmount(((Number) request.get("totalAmount")).doubleValue());
+            order.setTotalAmount(new java.math.BigDecimal(request.get("totalAmount").toString()));
         }
         if (request.get("receiverName") != null) {
             order.setReceiverName((String) request.get("receiverName"));
@@ -272,14 +271,12 @@ public class OrderController {
     private List<OrderItem> parseOrderItems(Map<String, Object> request) {
         List<Map<String, Object>> itemsMap = (List<Map<String, Object>>) request.get("items");
         
-        // 验证订单商品列表不能为空
         if (itemsMap == null || itemsMap.isEmpty()) {
             throw new IllegalArgumentException("订单商品不能为空");
         }
         
         List<OrderItem> orderItems = new java.util.ArrayList<>();
         
-        // 遍历商品列表，逐个解析并构建OrderItem对象
         for (Map<String, Object> itemMap : itemsMap) {
             OrderItem item = new OrderItem();
             
@@ -290,7 +287,7 @@ public class OrderController {
                 item.setProductName((String) itemMap.get("productName"));
             }
             if (itemMap.get("productPrice") != null) {
-                item.setProductPrice(((Number) itemMap.get("productPrice")).doubleValue());
+                item.setProductPrice(new java.math.BigDecimal(itemMap.get("productPrice").toString()));
             }
             if (itemMap.get("quantity") != null) {
                 item.setQuantity(((Number) itemMap.get("quantity")).intValue());

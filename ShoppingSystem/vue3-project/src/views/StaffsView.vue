@@ -27,7 +27,7 @@
       </div>
 
       <el-table :data="staffs" stripe style="width: 100%">
-        <el-table-column prop="staffId" label="员工 ID" width="120" />
+        <el-table-column prop="userId" label="员工 ID" width="120" />
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
@@ -44,13 +44,6 @@
               @click="showEditDialog(row)"
             >
               编辑
-            </el-button>
-            <el-button
-              type="danger"
-              size="small"
-              @click="deleteStaff(row)"
-            >
-              删除
             </el-button>
           </template>
         </el-table-column>
@@ -116,7 +109,7 @@ const staffFormRef = ref(null)
 const currentUser = ref(null)
 
 const isAdmin = computed(() => {
-  return currentUser.value && currentUser.value.role === 'admin'
+  return currentUser.value && (currentUser.value.role === 2 || currentUser.value.role === 'admin')
 })
 
 const staffForm = reactive({
@@ -138,8 +131,19 @@ const rules = {
 
 const loadStaffs = async () => {
   try {
-    let url = '/admin/staffs'
+    const role = currentUser.value?.role
+    let url = ''
     const params = {}
+
+    if (role === 2 || role === 'admin') {
+      url = '/admin/staffs'
+    } else if (role === 1 || role === 'staff') {
+      ElMessage.warning('员工角色暂无查看员工列表权限')
+      return
+    } else {
+      ElMessage.error('权限不足')
+      return
+    }
 
     if (searchText.value.trim()) {
       params.name = searchText.value.trim()
@@ -177,7 +181,7 @@ const showAddDialog = () => {
 
 const showEditDialog = (row) => {
   isEdit.value = true
-  staffForm.staffId = row.staffId
+  staffForm.staffId = row.userId
   staffForm.name = row.name
   staffForm.password = ''
   staffForm.status = row.status
@@ -220,22 +224,6 @@ const submitStaff = async () => {
       } finally {
         submitting.value = false
       }
-    }
-  })
-}
-
-const deleteStaff = (row) => {
-  ElMessageBox.confirm('确定要删除该员工吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await request.delete(`/admin/staffs/${row.staffId}`)
-      ElMessage.success('删除成功')
-      loadStaffs()
-    } catch (error) {
-      console.error(error)
     }
   })
 }

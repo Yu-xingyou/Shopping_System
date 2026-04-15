@@ -66,11 +66,22 @@ const currentUser = ref(null)
 
 const loadUsers = async () => {
   try {
-    let url = '/admin/users'
+    let url = ''
     const params = {}
 
     if (searchText.value.trim()) {
       params.name = searchText.value.trim()
+    }
+
+    const role = currentUser.value?.role
+
+    if (role === 2 || role === 'admin') {
+      url = '/admin/users'
+    } else if (role === 1 || role === 'staff') {
+      url = '/staff/users'
+    } else {
+      ElMessage.error('权限不足')
+      return
     }
 
     const res = await request.get(url, { params })

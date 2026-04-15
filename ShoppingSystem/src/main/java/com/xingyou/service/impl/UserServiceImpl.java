@@ -5,6 +5,7 @@ import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.UserMapper;
 import com.xingyou.service.UserService;
 import com.xingyou.util.JwtUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
     
@@ -37,20 +39,24 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public Map<String, Object> login(String userId, String password) {
+        log.info("用户登录请求 - userId: {}", userId);
+        
         User user = userMapper.findByUserId(userId);
         
         if (user == null) {
+            log.warn("登录失败 - 账号不存在: {}", userId);
             throw new BusinessException(401, "账号不存在");
         }
         
         if (!password.equals(user.getPassword())) {
+            log.warn("登录失败 - 密码错误: {}", userId);
             throw new BusinessException(401, "密码错误");
         }
         
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getUserId());
         claims.put("name", user.getName());
-        claims.put("role", "user");
+        claims.put("role", 0);
         
         String token = JwtUtils.generateJwt(claims);
         
@@ -60,6 +66,7 @@ public class UserServiceImpl implements UserService {
         result.put("user", user);
         result.put("token", token);
         
+        log.info("用户登录成功 - userId: {}, name: {}", userId, user.getName());
         return result;
     }
     
@@ -76,10 +83,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public String register(User user) {
-        // 生成初始用户ID
+        log.info("用户注册请求 - name: {}", user.getName());
+        
         String userId = generateUserId();
         
-        // 循环检查用户ID是否已存在，确保生成的ID唯一
         while (true) {
             User existingUser = userMapper.findByUserId(userId);
             if (existingUser == null) {
@@ -90,18 +97,18 @@ public class UserServiceImpl implements UserService {
         
         user.setUserId(userId);
         
-        // 设置用户默认属性：性别默认为"未知"，余额默认为0.0
-        if (user.getSex() == null || user.getSex().trim().isEmpty()) {
-            user.setSex("未知");
+        if (user.getSex() == null) {
+            user.setSex(0);
         }
-        user.setMoney(0.0);
+        user.setMoney(java.math.BigDecimal.ZERO);
         
-        // 插入用户数据并验证结果
         int rows = userMapper.insert(user);
         if (rows != 1) {
+            log.error("用户注册失败 - name: {}", user.getName());
             throw new BusinessException(500, "注册失败，请稍后重试");
         }
         
+        log.info("用户注册成功 - userId: {}, name: {}", userId, user.getName());
         return userId;
     }
     
@@ -115,9 +122,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User findByUserId(String userId) {
+        log.debug("查询用户信息 - userId: {}", userId);
+        
         User user = userMapper.findByUserId(userId);
         
-        // 为保护用户隐私和系统安全，清除敏感密码信息
         if (user != null) {
             user.setPassword(null);
         }
@@ -139,13 +147,14 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void update(String userId, User user) {
-        // 验证用户是否存在
+        log.info("更新用户信息请求 - userId: {}", userId);
+        
         User existingUser = userMapper.findByUserId(userId);
         if (existingUser == null) {
+            log.warn("更新失败 - 用户不存在: {}", userId);
             throw new BusinessException(404, "用户不存在");
         }
         
-        // 选择性更新用户信息，只处理非空字段
         if (user.getName() != null) {
             existingUser.setName(user.getName());
         }
@@ -156,11 +165,13 @@ public class UserServiceImpl implements UserService {
             existingUser.setPassword(user.getPassword());
         }
         
-        // 执行更新并验证结果
         int rows = userMapper.update(existingUser);
         if (rows != 1) {
+            log.error("更新用户信息失败 - userId: {}", userId);
             throw new BusinessException(500, "更新失败，请稍后重试");
         }
+        
+        log.info("更新用户信息成功 - userId: {}", userId);
     }
 
     /**

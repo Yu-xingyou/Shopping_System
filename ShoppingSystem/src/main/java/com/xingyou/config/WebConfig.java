@@ -22,7 +22,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/admin/login",
                         "/staff/login",
                         "/product/**",
-                        "/favorite/**"
+                        "/favorite/**",
+                        "/order/all", // Allow public access if needed, or remove if only for admins
+                        "/order/top-selling"
                 );
     }
 }

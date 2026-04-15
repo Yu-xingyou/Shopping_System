@@ -355,15 +355,15 @@ const orderForm = ref({
 })
 
 const isAdmin = computed(() => {
-  return currentUser.value && currentUser.value.role === 'admin'
+  return currentUser.value && (currentUser.value.role === 2 || currentUser.value.role === 'admin')
 })
 
 const isUser = computed(() => {
-  return currentUser.value && currentUser.value.role === 'user'
+  return currentUser.value && (currentUser.value.role === 0 || currentUser.value.role === 'user')
 })
 
 const isGuest = computed(() => {
-  return currentUser.value && currentUser.value.role === 'guest'
+  return !currentUser.value
 })
 
 const cartItems = computed(() => {
@@ -697,19 +697,7 @@ const loadFavoriteStatus = async () => {
 }
 
 const toggleFavorite = async (product) => {
-  if (!currentUser.value) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
-
-  if (currentUser.value.role === 'guest') {
-    ElMessage.warning('游客无法使用收藏功能，请先登录')
-    router.push('/login')
-    return
-  }
-
-  if (currentUser.value.role !== 'user') {
+  if (!isUser.value) {
     ElMessage.warning('只有用户角色可以使用收藏功能')
     return
   }
@@ -763,7 +751,7 @@ const toggleFavorite = async (product) => {
 }
 
 const loadUnreadCount = async () => {
-  if (!currentUser.value || currentUser.value.role !== 'user') {
+  if (!currentUser.value || (currentUser.value.role !== 0 && currentUser.value.role !== 'user')) {
     unreadCount.value = 0
     return
   }
@@ -794,7 +782,7 @@ const showNotificationDialog = async () => {
 }
 
 const loadNotifications = async () => {
-  if (!currentUser.value || currentUser.value.role !== 'user') {
+  if (!currentUser.value || (currentUser.value.role !== 0 && currentUser.value.role !== 'user')) {
     return
   }
 
@@ -889,7 +877,7 @@ watch(() => route.path, (newPath, oldPath) => {
 })
 
 watch(() => products.value, (newProducts) => {
-  if (newProducts.length > 0 && currentUser.value && currentUser.value.role === 'user') {
+  if (newProducts.length > 0 && currentUser.value && (currentUser.value.role === 0 || currentUser.value.role === 'user')) {
     loadFavoriteStatus()
   }
 }, { deep: true })

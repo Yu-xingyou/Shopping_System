@@ -5,6 +5,7 @@ import com.github.pagehelper.PageInfo;
 import com.xingyou.entity.shopping.Product;
 import com.xingyou.mapper.ProductMapper;
 import com.xingyou.service.ProductService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class ProductServiceImpl implements ProductService {
     
@@ -33,22 +35,21 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public Map<String, Object> findAll(Integer pageNum, Integer pageSize) {
-        // 启动PageHelper分页插件，设置分页参数
+        log.debug("分页查询所有商品 - pageNum: {}, pageSize: {}", pageNum, pageSize);
+        
         PageHelper.startPage(pageNum, pageSize);
         
-        // 查询商品列表（PageHelper会自动添加LIMIT语句）
         List<Product> products = productMapper.findAll();
         
-        // 封装分页信息，包括总记录数、总页数等
         PageInfo<Product> pageInfo = new PageInfo<>(products);
         
-        // 构建返回结果Map，包含商品列表和分页元数据
         Map<String, Object> result = new HashMap<>();
         result.put("list", products);
         result.put("total", pageInfo.getTotal());
         result.put("pageNum", pageNum);
         result.put("pageSize", pageSize);
         
+        log.debug("分页查询商品完成 - 返回数量: {}, 总数: {}", products.size(), pageInfo.getTotal());
         return result;
     }
     
@@ -69,22 +70,21 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public Map<String, Object> findByCondition(Product product, Integer pageNum, Integer pageSize) {
-        // 启动PageHelper分页插件，设置分页参数
+        log.debug("条件分页查询商品 - pageNum: {}, pageSize: {}", pageNum, pageSize);
+        
         PageHelper.startPage(pageNum, pageSize);
         
-        // 根据条件查询商品列表
         List<Product> products = productMapper.findByCondition(product);
         
-        // 封装分页信息，包括总记录数、总页数等
         PageInfo<Product> pageInfo = new PageInfo<>(products);
         
-        // 构建返回结果Map，包含商品列表和分页元数据
         Map<String, Object> result = new HashMap<>();
         result.put("list", products);
         result.put("total", pageInfo.getTotal());
         result.put("pageNum", pageNum);
         result.put("pageSize", pageSize);
         
+        log.debug("条件分页查询商品完成 - 返回数量: {}, 总数: {}", products.size(), pageInfo.getTotal());
         return result;
     }
     
@@ -98,6 +98,7 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public Product findById(Integer id) {
+        log.debug("根据ID查询商品 - id: {}", id);
         return productMapper.findById(id);
     }
 

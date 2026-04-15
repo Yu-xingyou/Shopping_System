@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -33,7 +34,7 @@ public class Order {
     /**
      * 订单总金额
      */
-    private Double totalAmount;
+    private BigDecimal totalAmount;
     
     /**
      * 订单状态：0-待支付，1-已支付，2-缺货等待，3-已完成，4-已取消

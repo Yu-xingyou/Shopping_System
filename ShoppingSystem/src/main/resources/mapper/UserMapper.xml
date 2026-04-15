@@ -12,8 +12,8 @@
 
     <!-- 新增用户（用户注册） -->
     <insert id="insert" parameterType="com.xingyou.entity.people.User">
-        INSERT INTO user (user_id, name, password, sex, money)
-        VALUES (#{userId}, #{name}, #{password}, #{sex}, #{money})
+        INSERT INTO user (user_id, name, password, sex, email, phone, avatar, money, role)
+        VALUES (#{userId}, #{name}, #{password}, #{sex}, #{email}, #{phone}, #{avatar}, #{money}, #{role})
     </insert>
 
     <!-- 根据用户ID查询用户信息（用于登录验证） -->
@@ -25,7 +25,7 @@
         选择性更新用户信息
 
         只更新提供的非空字段，未提供的字段保持原值不变。
-        支持更新姓名、性别、密码三个字段。
+        支持更新姓名、性别、密码、邮箱、手机、头像等字段。
     -->
     <update id="update" parameterType="com.xingyou.entity.people.User">
         UPDATE user
@@ -33,6 +33,10 @@
             <if test="name != null">name = #{name},</if>
             <if test="sex != null">sex = #{sex},</if>
             <if test="password != null">password = #{password},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="money != null">money = #{money},</if>
         </set>
         WHERE user_id = #{userId}
     </update>

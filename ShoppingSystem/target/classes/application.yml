@@ -22,6 +22,11 @@ mybatis:
 server:
   port: 8080
 
+# JWT配置
+jwt:
+  signKey: eGluZ3lvdQ==
+  expire: 43200000
+
 #阿里云OSS
 aliyun:
   oss:

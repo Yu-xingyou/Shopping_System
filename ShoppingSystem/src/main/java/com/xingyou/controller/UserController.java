@@ -4,11 +4,14 @@ import com.xingyou.common.Result;
 import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
+import com.xingyou.service.AdminService;
 import com.xingyou.service.OrderService;
+import com.xingyou.service.StaffService;
 import com.xingyou.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,31 +23,78 @@ public class UserController {
     private UserService userService;
     
     @Autowired
+    private AdminService adminService;
+    
+    @Autowired
+    private StaffService staffService;
+    
+    @Autowired
     private OrderService orderService;
     
     /**
-     * 用户登录接口
+     * 统一登录接口（支持所有角色）
      * 
-     * @param user 用户信息对象，必须包含用户ID和密码
-     * @return Result 返回登录结果，成功时包含用户信息和JWT令牌
-     * @throws IllegalArgumentException 当账号为空或密码为空时抛出异常
+     * 根据 userId 格式自动识别角色：
+     * - 以U开头：普通用户登录（role=0）
+     * - 纯数字：先尝试管理员登录，失败则尝试员工登录
+     *   - 管理员登录成功：role=2
+     *   - 员工登录成功：role=1
+     * 
+     * 注意：员工和管理员的账号ID必须保证不重复，否则管理员ID会被优先识别
+     * 
+     * @param loginRequest 登录请求，包含 userId 和 password
+     * @return Result 返回登录结果，包含用户信息和JWT令牌
      */
     @PostMapping("/login")
-    public Result login(@RequestBody User user) {
-        if (user.getUserId() == null || user.getUserId().trim().isEmpty()) {
+    public Result login(@RequestBody Map<String, Object> loginRequest) {
+        String userId = (String) loginRequest.get("userId");
+        String password = (String) loginRequest.get("password");
+        
+        if (userId == null || userId.trim().isEmpty()) {
             throw new IllegalArgumentException("账号不能为空");
         }
         
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+        if (password == null || password.trim().isEmpty()) {
             throw new IllegalArgumentException("密码不能为空");
         }
         
-        Map<String, Object> loginResult = userService.login(user.getUserId(), user.getPassword());
-        return Result.success(loginResult);
+        try {
+            Map<String, Object> loginResult;
+            
+            // 判断用户类型
+            if (userId.startsWith("U")) {
+                // 普通用户登录
+                loginResult = userService.login(userId, password);
+            } else {
+                // 尝试解析为整数ID（员工或管理员）
+                try {
+                    Integer id = Integer.parseInt(userId);
+                    // 先尝试管理员登录
+                    try {
+                        loginResult = adminService.login(id, password);
+                    } catch (BusinessException e) {
+                        // 管理员登录失败，尝试员工登录
+                        if (e.getCode() == 401 || e.getCode() == 404) {
+                            loginResult = staffService.login(id, password);
+                        } else {
+                            throw e;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    throw new BusinessException(400, "账号格式不正确");
+                }
+            }
+            
+            return Result.success(loginResult);
+        } catch (BusinessException e) {
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            return Result.error(500, "登录失败：" + e.getMessage());
+        }
     }
     
     /**
-     * 用户注册接口
+     * 用户注册接口（仅普通用户）
      * 
      * @param user 用户信息对象，必须包含密码等注册所需信息
      * @return Result 返回注册结果，成功时包含生成的用户ID

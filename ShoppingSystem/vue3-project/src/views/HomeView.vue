@@ -2,82 +2,48 @@
   <div class="home-container">
     <div class="welcome-card">
       <h1 class="welcome-title">欢迎来到购物系统</h1>
-      <p class="welcome-subtitle">选择您的登录方式</p>
+      <p class="welcome-subtitle">选择登录方式</p>
 
-      <div class="role-cards">
+      <div class="action-cards">
         <div
-          class="role-card"
-          :class="{ active: selectedRole === 'user' }"
-          @click="selectRole('user')"
+          class="action-card login-card"
+          @click="goToLogin"
         >
           <el-icon :size="48" color="#409EFF"><User /></el-icon>
-          <h3>用户</h3>
-          <p>可以浏览和预购商品</p>
+          <h3>账号登录</h3>
+          <p>使用账号密码登录系统</p>
+          <el-button type="primary" size="default" style="margin-top: 15px;">
+            立即登录
+          </el-button>
         </div>
 
         <div
-          class="role-card"
-          :class="{ active: selectedRole === 'staff' }"
-          @click="selectRole('staff')"
-        >
-          <el-icon :size="48" color="#67C23A"><UserFilled /></el-icon>
-          <h3>员工</h3>
-          <p>管理用户和商品</p>
-        </div>
-
-        <div
-          class="role-card"
-          :class="{ active: selectedRole === 'admin' }"
-          @click="selectRole('admin')"
-        >
-          <el-icon :size="48" color="#E6A23C"><Avatar /></el-icon>
-          <h3>管理员</h3>
-          <p>全面管理系统</p>
-        </div>
-
-        <div
-          class="role-card"
-          :class="{ active: selectedRole === 'guest' }"
-          @click="selectRole('guest')"
+          class="action-card guest-card"
+          @click="guestLogin"
         >
           <el-icon :size="48" color="#909399"><Tourist /></el-icon>
-          <h3>游客</h3>
-          <p>仅浏览商品</p>
+          <h3>游客浏览</h3>
+          <p>无需登录，仅浏览商品</p>
+          <el-button type="info" size="default" style="margin-top: 15px;">
+            游客进入
+          </el-button>
         </div>
       </div>
-
-      <el-button
-        type="primary"
-        size="large"
-        :disabled="!selectedRole"
-        @click="handleContinue"
-        style="width: 200px; margin-top: 30px"
-      >
-        继续
-      </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const selectedRole = ref('')
 
-const selectRole = (role) => {
-  selectedRole.value = role
+const goToLogin = () => {
+  router.push('/login')
 }
 
-const handleContinue = () => {
-  if (selectedRole.value === 'guest') {
-    // 游客直接跳转到商品页面
-    router.push('/products?role=guest')
-  } else {
-    // 其他角色跳转到登录页
-    router.push(`/login?role=${selectedRole.value}`)
-  }
+const guestLogin = () => {
+  router.push('/products?role=guest')
 }
 </script>
 
@@ -97,7 +63,7 @@ const handleContinue = () => {
   border-radius: 16px;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
   text-align: center;
-  max-width: 900px;
+  max-width: 700px;
   width: 100%;
 }
 
@@ -113,15 +79,15 @@ const handleContinue = () => {
   margin-bottom: 40px;
 }
 
-.role-cards {
+.action-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 30px;
   margin-bottom: 30px;
 }
 
-.role-card {
-  padding: 30px 20px;
+.action-card {
+  padding: 40px 30px;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   cursor: pointer;
@@ -129,26 +95,35 @@ const handleContinue = () => {
   background: white;
 }
 
-.role-card:hover {
+.action-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   border-color: #667eea;
 }
 
-.role-card.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.login-card:hover {
+  border-color: #409EFF;
 }
 
-.role-card h3 {
+.guest-card:hover {
+  border-color: #909399;
+}
+
+.action-card h3 {
   margin: 16px 0 8px;
-  font-size: 20px;
+  font-size: 22px;
+  color: #333;
 }
 
-.role-card p {
+.action-card p {
   font-size: 14px;
-  opacity: 0.8;
+  color: #666;
+}
+
+@media (max-width: 600px) {
+  .action-cards {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
 

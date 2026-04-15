@@ -1,11 +1,11 @@
 package com.xingyou.service.impl;
 
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.StaffMapper;
 import com.xingyou.service.StaffService;
 import com.xingyou.util.JwtUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class StaffServiceImpl implements StaffService {
     
@@ -28,7 +29,7 @@ public class StaffServiceImpl implements StaffService {
      * @param staffId 员工ID，用于标识登录的员工
      * @param password 密码，用于验证员工身份
      * @return Map<String, Object> 登录成功时返回包含员工信息和JWT令牌的Map:
-     *         - staff: 员工对象
+     *         - user: 员工用户对象
      *         - token: JWT认证令牌
      * @throws BusinessException 当验证失败时抛出业务异常：
      *         - 401: 员工ID不存在
@@ -37,35 +38,43 @@ public class StaffServiceImpl implements StaffService {
      */
     @Override
     public Map<String, Object> login(Integer staffId, String password) {
-        Staff staff = staffMapper.findById(staffId);
+        log.info("员工登录请求 - staffId: {}", staffId);
+        
+        User staff = staffMapper.findById(staffId);
         
         if (staff == null) {
+            log.warn("员工登录失败 - 员工ID不存在: {}", staffId);
             throw new BusinessException(401, "员工 ID 不存在");
         }
         
         if (!password.equals(staff.getPassword())) {
+            log.warn("员工登录失败 - 密码错误: {}", staffId);
             throw new BusinessException(401, "密码错误");
         }
         
         if (staff.getStatus() == null || staff.getStatus() != 1) {
             String statusMsg = getStatusMessage(staff.getStatus());
+            log.warn("员工登录失败 - 账号状态异常: staffId: {}, status: {}", staffId, staff.getStatus());
             throw new BusinessException(403, "登录失败：" + statusMsg);
         }
         
         Map<String, Object> claims = new HashMap<>();
-        claims.put("staffId", staff.getStaffId());
+        claims.put("userId", staff.getUserId());
         claims.put("name", staff.getName());
-        claims.put("role", "staff");
+        claims.put("role", 1);
         
         String token = JwtUtils.generateJwt(claims);
         
+        staff.setPassword(null);
+        
         Map<String, Object> result = new HashMap<>();
-        result.put("staff", staff);
+        result.put("user", staff);
         result.put("token", token);
         
+        log.info("员工登录成功 - staffId: {}, name: {}", staffId, staff.getName());
         return result;
     }
-    
+
     /**
      * 获取员工状态提示信息
      * 
@@ -98,20 +107,21 @@ public class StaffServiceImpl implements StaffService {
      * 更新后会验证受影响的行数，确保操作成功。
      *
      * @param staffId 员工ID，用于指定需要更新的员工
-     * @param staff 员工对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
+     * @param staff 员工用户对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      * @throws BusinessException 当验证失败或更新异常时抛出业务异常：
      *         - 404: 员工不存在
      *         - 500: 更新失败，请稍后重试
      */
     @Override
-    public void update(Integer staffId, Staff staff) {
-        // 验证员工是否存在
-        Staff existingStaff = staffMapper.findByStaffId(staffId);
+    public void update(Integer staffId, User staff) {
+        log.info("更新员工信息请求 - staffId: {}", staffId);
+        
+        User existingStaff = staffMapper.findByStaffId(staffId);
         if (existingStaff == null) {
+            log.warn("更新员工失败 - 员工不存在: {}", staffId);
             throw new BusinessException(404, "员工不存在");
         }
         
-        // 选择性更新员工信息，只处理非空字段
         if (staff.getName() != null) {
             existingStaff.setName(staff.getName());
         }
@@ -119,11 +129,13 @@ public class StaffServiceImpl implements StaffService {
             existingStaff.setPassword(staff.getPassword());
         }
         
-        // 执行更新并验证结果
         int rows = staffMapper.update(existingStaff);
         if (rows != 1) {
+            log.error("更新员工信息失败 - staffId: {}", staffId);
             throw new BusinessException(500, "更新失败，请稍后重试");
         }
+        
+        log.info("更新员工信息成功 - staffId: {}", staffId);
     }
     
     /**
@@ -135,6 +147,7 @@ public class StaffServiceImpl implements StaffService {
      */
     @Override
     public List<User> findAllUsers() {
+        log.debug("员工查询所有用户");
         return staffMapper.findAllUsers();
     }
     
@@ -148,9 +161,9 @@ public class StaffServiceImpl implements StaffService {
      */
     @Override
     public User findUserByUserId(String userId) {
+        log.debug("员工查询用户信息 - userId: {}", userId);
         User user = staffMapper.findUserByUserId(userId);
         
-        // 为保护用户隐私和系统安全，清除敏感密码信息
         if (user != null) {
             user.setPassword(null);
         }
@@ -167,6 +180,7 @@ public class StaffServiceImpl implements StaffService {
      */
     @Override
     public List<User> findUserByName(String name) {
+        log.debug("员工模糊查询用户 - name: {}", name);
         return staffMapper.findUserByName(name);
     }
 }

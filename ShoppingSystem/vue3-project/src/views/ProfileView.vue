@@ -18,8 +18,9 @@
 
         <el-form-item label="性别" prop="sex" v-if="isUser">
           <el-radio-group v-model="profileForm.sex">
-            <el-radio label="男">男</el-radio>
-            <el-radio label="女">女</el-radio>
+            <el-radio :label="1">男</el-radio>
+            <el-radio :label="2">女</el-radio>
+            <el-radio :label="0">未知</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -64,13 +65,13 @@ const currentUser = ref(null)
 const profileForm = reactive({
   userId: '',
   name: '',
-  sex: '',
+  sex: 0,
   money: 0,
   password: ''
 })
 
 const isUser = computed(() => {
-  return currentUser.value && currentUser.value.role === 'user'
+  return currentUser.value && (currentUser.value.role === 0 || currentUser.value.role === 'user')
 })
 
 const rules = {
@@ -83,13 +84,24 @@ const rules = {
   ]
 }
 
+// 获取性别文本
+const getSexText = (sex) => {
+  const sexMap = {
+    0: '未知',
+    1: '男',
+    2: '女',
+    3: '其他'
+  }
+  return sexMap[sex] || '未知'
+}
+
 const loadUserProfile = () => {
   const savedUser = localStorage.getItem('currentUser')
   if (savedUser) {
     currentUser.value = JSON.parse(savedUser)
-    profileForm.userId = currentUser.value.userId || currentUser.value.staffId || currentUser.value.adminId
+    profileForm.userId = currentUser.value.userId
     profileForm.name = currentUser.value.name || ''
-    profileForm.sex = currentUser.value.sex || '男'
+    profileForm.sex = currentUser.value.sex || 0
     profileForm.money = currentUser.value.money || 0
   } else {
     ElMessage.error('请先登录')
@@ -107,7 +119,9 @@ const updateProfile = async () => {
         let url = ''
         let requestData = {}
 
-        if (currentUser.value.role === 'user') {
+        // 根据角色判断请求路径
+        if (currentUser.value.role === 0 || currentUser.value.role === 'user') {
+          // 普通用户
           url = `/user/${profileForm.userId}`
           requestData = {
             userId: profileForm.userId,
@@ -122,10 +136,11 @@ const updateProfile = async () => {
             }
             requestData.password = profileForm.password
           }
-        } else if (currentUser.value.role === 'staff') {
+        } else if (currentUser.value.role === 1 || currentUser.value.role === 'staff') {
+          // 员工
           url = `/staff/${profileForm.userId}`
           requestData = {
-            staffId: profileForm.userId,
+            userId: profileForm.userId,
             name: profileForm.name
           }
           if (profileForm.password && profileForm.password.trim()) {
@@ -136,10 +151,11 @@ const updateProfile = async () => {
             }
             requestData.password = profileForm.password
           }
-        } else if (currentUser.value.role === 'admin') {
+        } else if (currentUser.value.role === 2 || currentUser.value.role === 'admin') {
+          // 管理员
           url = `/admin/${profileForm.userId}`
           requestData = {
-            adminId: profileForm.userId,
+            userId: profileForm.userId,
             name: profileForm.name
           }
           if (profileForm.password && profileForm.password.trim()) {
@@ -157,11 +173,12 @@ const updateProfile = async () => {
         if (res.code === 200) {
           ElMessage.success('个人信息更新成功')
 
+          // 更新本地存储的用户信息
           const updatedUser = {
             ...currentUser.value,
             name: profileForm.name
           }
-          if (currentUser.value.role === 'user') {
+          if (currentUser.value.role === 0 || currentUser.value.role === 'user') {
             updatedUser.sex = profileForm.sex
           }
           localStorage.setItem('currentUser', JSON.stringify(updatedUser))

@@ -1,7 +1,5 @@
 package com.xingyou.mapper;
 
-import com.xingyou.entity.people.Admin;
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import org.apache.ibatis.annotations.Mapper;
@@ -18,31 +16,83 @@ import java.util.List;
 @Mapper
 public interface AdminMapper {
     
-    void insert(Admin admin);
+    /**
+     * 根据管理员ID查询管理员信息
+     * @param adminId 管理员ID
+     * @return 管理员用户对象
+     */
+    User findByAdminId(@Param("adminId") Integer adminId);
     
-    Admin findByAdminId(@Param("adminId") Integer adminId);
-    
+    /**
+     * 查询所有普通用户
+     * @return 普通用户列表
+     */
     List<User> findAllUsers();
     
+    /**
+     * 根据用户ID查询用户信息
+     * @param userId 用户ID
+     * @return 用户对象
+     */
     User findUserByUserId(@Param("userId") String userId);
     
+    /**
+     * 根据用户名模糊查询用户
+     * @param name 用户名
+     * @return 用户列表
+     */
     List<User> findUserByName(@Param("name") String name);
     
-    List<Staff> findAllStaffs();
+    /**
+     * 查询所有员工
+     * @return 员工列表
+     */
+    List<User> findAllStaffs();
     
-    Staff findStaffByStaffId(@Param("staffId") Integer staffId);
+    /**
+     * 根据员工ID查询员工信息
+     * @param staffId 员工ID
+     * @return 员工用户对象
+     */
+    User findStaffByStaffId(@Param("staffId") Integer staffId);
     
-    List<Staff> findStaffByName(@Param("name") String name);
+    /**
+     * 根据员工姓名模糊查询
+     * @param name 员工姓名
+     * @return 员工列表
+     */
+    List<User> findStaffByName(@Param("name") String name);
     
+    /**
+     * 查询所有订单
+     * @return 订单列表
+     */
     List<Order> findAllOrders();
     
-    void addStaff(Staff staff);
+    /**
+     * 添加员工
+     * @param staff 员工用户对象
+     */
+    void addStaff(User staff);
     
-    void updateStaff(Staff staff);
+    /**
+     * 更新员工信息
+     * @param staff 员工用户对象
+     */
+    void updateStaff(User staff);
     
+    /**
+     * 更新商品库存
+     * @param id 商品ID
+     * @param stock 库存数量
+     */
     void updateProductStock(@Param("id") Integer id, @Param("stock") Integer stock);
     
-    void update(Admin admin);
+    /**
+     * 更新管理员信息
+     * @param admin 管理员用户对象
+     */
+    void update(User admin);
     
     /**
      * 查询已完成订单的总收益（按时间范围筛选）

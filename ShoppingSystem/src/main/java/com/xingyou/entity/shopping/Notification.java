@@ -1,5 +1,7 @@
 package com.xingyou.entity.shopping;
 
+
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,8 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 用户通知实体类
- * 用于存储用户收到的系统通知信息，如商品补货提醒等
+ * 通知实体类
+ * 用于存储系统发送给用户的各类通知信息，如商品补货通知等
  */
 @Data
 @AllArgsConstructor
@@ -25,12 +27,12 @@ public class Notification {
     private String userId;
     
     /**
-     * 商品ID，关联商品表
+     * 商品ID，关联商品表（可选，用于补货通知）
      */
     private Integer productId;
     
     /**
-     * 商品名称
+     * 商品名称（冗余字段，方便显示）
      */
     private String productName;
     

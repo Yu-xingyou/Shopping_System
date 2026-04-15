@@ -1,6 +1,5 @@
 package com.xingyou.mapper;
 
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -17,38 +16,30 @@ import java.util.List;
 public interface StaffMapper {
     
     /**
-     * 新增员工
-     *
-     * @param staff 员工对象，包含待插入的员工信息
-     * @return 受影响的行数
-     */
-    int insert(Staff staff);
-    
-    /**
      * 根据员工ID查询员工信息（用于业务逻辑）
      *
      * @param staffId 员工ID
-     * @return 员工对象，不存在则返回null
+     * @return 员工用户对象，不存在则返回null
      */
-    Staff findByStaffId(@Param("staffId") Integer staffId);
+    User findByStaffId(@Param("staffId") Integer staffId);
     
     /**
      * 根据员工ID查询员工信息（用于登录验证）
      *
      * @param staffId 员工ID
-     * @return 员工对象，不存在则返回null
+     * @return 员工用户对象，不存在则返回null
      */
-    Staff findById(@Param("staffId") Integer staffId);
+    User findById(@Param("staffId") Integer staffId);
     
     /**
      * 选择性更新员工信息
      * 
      * 只更新提供的非空字段，未提供的字段保持原值不变。
      *
-     * @param staff 员工对象，包含待更新的信息
+     * @param staff 员工用户对象，包含待更新的信息
      * @return 受影响的行数
      */
-    int update(Staff staff);
+    int update(User staff);
     
     /**
      * 查询所有用户列表（员工权限）

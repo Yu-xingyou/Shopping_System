@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * 订单项实体类
  * 用于存储订单中的具体商品信息，一个订单可包含多个订单项
@@ -35,7 +37,7 @@ public class OrderItem {
     /**
      * 商品单价（快照，保存下单时的商品价格）
      */
-    private Double productPrice;
+    private BigDecimal productPrice;
     
     /**
      * 购买数量

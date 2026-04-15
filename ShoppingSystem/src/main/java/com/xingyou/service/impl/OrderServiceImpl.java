@@ -6,15 +6,18 @@ import com.xingyou.entity.shopping.OrderItem;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.mapper.OrderMapper;
 import com.xingyou.service.OrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+@Slf4j
 @Service
 public class OrderServiceImpl implements OrderService {
     
@@ -39,50 +42,52 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Order createOrder(Order order, List<OrderItem> orderItems) {
-        // 验证订单商品列表不能为空
+        log.info("创建订单请求 - userId: {}, 商品数量: {}", order.getUserId(), orderItems.size());
+        
         if (orderItems == null || orderItems.isEmpty()) {
             throw new BusinessException(400, "订单商品不能为空");
         }
         
-        // 验证用户ID不能为空
         if (order.getUserId() == null) {
             throw new BusinessException(400, "用户 ID 不能为空");
         }
         
-        // 计算订单总金额：遍历所有商品，累加（单价 × 数量）
-        double totalAmount = 0.0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
         for (OrderItem item : orderItems) {
-            double itemAmount = item.getProductPrice() * item.getQuantity();
-            totalAmount += itemAmount;
+            BigDecimal itemPrice = item.getProductPrice();
+            BigDecimal quantity = BigDecimal.valueOf(item.getQuantity());
+            BigDecimal itemAmount = itemPrice.multiply(quantity);
+            totalAmount = totalAmount.add(itemAmount);
         }
         order.setTotalAmount(totalAmount);
         
-        // 验证用户是否存在
         User existingUser = orderMapper.findUserByUserId(order.getUserId());
         if (existingUser == null) {
+            log.warn("创建订单失败 - 用户不存在: {}", order.getUserId());
             throw new BusinessException(404, "用户不存在");
         }
         
-        // 验证用户余额是否充足
-        if (existingUser.getMoney() == null || existingUser.getMoney() < totalAmount) {
+        BigDecimal userMoney = existingUser.getMoney();
+        if (userMoney == null || userMoney.compareTo(totalAmount) < 0) {
+            log.warn("创建订单失败 - 余额不足: userId: {}, 订单金额: {}, 用户余额: {}", 
+                    order.getUserId(), totalAmount, userMoney);
             throw new BusinessException(400, "余额不足，无法创建订单");
         }
         
-        // 设置订单的初始属性：订单号、状态（0-待付款）、创建时间
         String orderNum = generateOrderNum();
         order.setOrderNum(orderNum);
         order.setStatus(0);
         order.setCreateTime(LocalDateTime.now());
         
-        // 插入订单主表数据
         orderMapper.insert(order);
         
-        // 批量插入订单明细数据，关联订单ID
         for (OrderItem item : orderItems) {
             item.setOrderId(order.getId());
             orderMapper.insertOrderItem(item);
         }
         
+        log.info("创建订单成功 - orderId: {}, orderNum: {}, totalAmount: {}", 
+                order.getId(), orderNum, totalAmount);
         return order;
     }
     
@@ -95,6 +100,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<Order> findAll() {
+        log.debug("查询所有订单");
         return orderMapper.findAll();
     }
     
@@ -108,6 +114,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Order findById(Integer id) {
+        log.debug("根据ID查询订单 - id: {}", id);
         return orderMapper.findById(id);
     }
     
@@ -121,6 +128,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<Order> findByUserId(String userId) {
+        log.debug("根据用户ID查询订单 - userId: {}", userId);
         return orderMapper.findByUserId(userId);
     }
     
@@ -134,6 +142,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public List<OrderItem> findOrderItemsByOrderId(Integer orderId) {
+        log.debug("根据订单ID查询订单明细 - orderId: {}", orderId);
         return orderMapper.findOrderItemsByOrderId(orderId);
     }
     
@@ -153,22 +162,23 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void updateStatus(Integer id, Integer status) {
-        // 验证订单是否存在
+        log.info("更新订单状态请求 - orderId: {}, newStatus: {}", id, status);
+        
         Order order = orderMapper.findById(id);
         if (order == null) {
+            log.warn("更新订单状态失败 - 订单不存在: {}", id);
             throw new BusinessException(404, "订单不存在");
         }
         
-        // 当订单状态变更为已发货（status=2）时，执行库存扣减逻辑
         if (status == 2 && order.getStatus() != 2) {
             List<OrderItem> items = orderMapper.findOrderItemsByOrderId(id);
             if (items != null && !items.isEmpty()) {
                 List<String> insufficientProducts = new java.util.ArrayList<>();
                 
-                // 遍历订单中的所有商品，检查库存是否充足
                 for (OrderItem item : items) {
                     com.xingyou.entity.shopping.Product product = orderMapper.findProductById(item.getProductId());
                     if (product == null) {
+                        log.error("更新订单状态失败 - 商品不存在: productId: {}", item.getProductId());
                         throw new BusinessException(404, "商品【" + item.getProductName() + "】不存在");
                     }
                     
@@ -178,16 +188,16 @@ public class OrderServiceImpl implements OrderService {
                     }
                 }
                 
-                // 如果有商品库存不足，抛出异常并列出所有库存不足的商品
                 if (!insufficientProducts.isEmpty()) {
                     String errorMsg = "以下商品库存不足，无法发货：" + String.join("、", insufficientProducts);
+                    log.warn("更新订单状态失败 - 库存不足: orderId: {}, details: {}", id, errorMsg);
                     throw new BusinessException(400, errorMsg);
                 }
                 
-                // 库存充足，批量扣减订单中所有商品的库存
                 for (OrderItem item : items) {
                     orderMapper.updateProductStock(item.getProductId(), item.getQuantity());
                 }
+                log.info("订单发货 - 库存扣减完成: orderId: {}", id);
             }
         }
         
@@ -198,6 +208,8 @@ public class OrderServiceImpl implements OrderService {
         } else {
             orderMapper.updateStatus(id, status);
         }
+        
+        log.info("更新订单状态成功 - orderId: {}, status: {}", id, status);
     }
     
     /**
@@ -213,19 +225,21 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void cancelOrderByStaff(Integer id) {
-        // 验证订单是否存在
+        log.info("员工取消订单请求 - orderId: {}", id);
+        
         Order order = orderMapper.findById(id);
         if (order == null) {
+            log.warn("取消订单失败 - 订单不存在: {}", id);
             throw new BusinessException(404, "订单不存在");
         }
         
-        // 验证订单状态是否允许取消，状态>=3的订单不可取消
         if (order.getStatus() >= 3) {
+            log.warn("取消订单失败 - 订单不可取消: orderId: {}, status: {}", id, order.getStatus());
             throw new BusinessException(400, "该订单不可取消");
         }
         
-        // 更新订单状态为已取消（状态4）
         orderMapper.updateStatus(id, 4);
+        log.info("员工取消订单成功 - orderId: {}", id);
     }
     
     /**
@@ -244,30 +258,32 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void cancelOrderByUser(Integer id, String userId) {
-        // 验证订单是否存在
+        log.info("用户取消订单请求 - orderId: {}, userId: {}", id, userId);
+        
         Order order = orderMapper.findById(id);
         if (order == null) {
+            log.warn("取消订单失败 - 订单不存在: {}", id);
             throw new BusinessException(404, "订单不存在");
         }
         
-        // 验证用户权限，确保只能取消自己的订单
         if (!order.getUserId().equals(userId)) {
+            log.warn("取消订单失败 - 无权操作: orderId: {}, userId: {}", id, userId);
             throw new BusinessException(403, "无权取消该订单");
         }
         
-        // 验证订单状态是否允许取消
         if (order.getStatus() >= 3) {
+            log.warn("取消订单失败 - 订单不可取消: orderId: {}, status: {}", id, order.getStatus());
             throw new BusinessException(400, "该订单不可取消");
         }
         
-        // 如果订单已发货（状态2），取消时需要扣除5%违约金
         if (order.getStatus() == 2) {
-            double penalty = order.getTotalAmount() * 0.05;
-            orderMapper.updateUserMoney(userId, -penalty);
+            BigDecimal penalty = order.getTotalAmount().multiply(new BigDecimal("0.05"));
+            orderMapper.updateUserMoney(userId, -penalty.doubleValue());
+            log.info("订单已发货取消 - 扣除违约金: orderId: {}, penalty: {}", id, penalty);
         }
         
-        // 更新订单状态为已取消（状态4）
         orderMapper.updateStatus(id, 4);
+        log.info("用户取消订单成功 - orderId: {}", id);
     }
     
     /**
@@ -287,16 +303,21 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public void confirmReceipt(Integer id, String userId, String receiptImageUrl) {
+        log.info("用户确认收货请求 - orderId: {}, userId: {}", id, userId);
+        
         Order order = orderMapper.findById(id);
         if (order == null) {
+            log.warn("确认收货失败 - 订单不存在: {}", id);
             throw new BusinessException(404, "订单不存在");
         }
         
         if (!order.getUserId().equals(userId)) {
+            log.warn("确认收货失败 - 无权操作: orderId: {}, userId: {}", id, userId);
             throw new BusinessException(403, "无权确认该订单");
         }
         
         if (order.getStatus() != 2) {
+            log.warn("确认收货失败 - 订单状态不正确: orderId: {}, status: {}", id, order.getStatus());
             throw new BusinessException(400, "只有已发货的订单才能确认收货");
         }
         
@@ -304,7 +325,9 @@ public class OrderServiceImpl implements OrderService {
         
         orderMapper.updateStatusToFinished(id, 3);
         
-        orderMapper.updateUserMoney(userId, -order.getTotalAmount());
+        orderMapper.updateUserMoney(userId, -order.getTotalAmount().doubleValue());
+        
+        log.info("用户确认收货成功 - orderId: {}, amount: {}", id, order.getTotalAmount());
     }
     
     /**
@@ -337,6 +360,7 @@ public class OrderServiceImpl implements OrderService {
         if (limit == null || limit <= 0) {
             limit = 10;
         }
+        log.debug("查询热销产品TOP {} - limit: {}", limit, limit);
         return orderMapper.getTopSellingProducts(limit);
     }
 

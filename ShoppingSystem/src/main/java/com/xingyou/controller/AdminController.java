@@ -1,8 +1,6 @@
 package com.xingyou.controller;
 
 import com.xingyou.common.Result;
-import com.xingyou.entity.people.Admin;
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
@@ -20,28 +18,6 @@ public class AdminController {
     
     @Autowired
     private AdminService adminService;
-    
-    /**
-     * 管理员登录接口
-     * 
-     * @param admin 管理员登录信息,包含管理员ID和密码
-     * @return Result 返回登录结果,包含管理员信息和JWT令牌
-     * @throws IllegalArgumentException 当管理员ID为空或密码为空时抛出异常
-     */
-    @PostMapping("/login")
-    public Result login(@RequestBody Admin admin) {
-        if (admin.getAdminId() == null) {
-            throw new IllegalArgumentException("管理员 ID 不能为空");
-        }
-        
-        if (admin.getPassword() == null || admin.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("密码不能为空");
-        }
-        
-        Map<String, Object> loginResult = adminService.login(admin.getAdminId(), admin.getPassword());
-        
-        return Result.success(loginResult);
-    }
     
     /**
      * 查询所有订单列表
@@ -100,7 +76,7 @@ public class AdminController {
         
         // 按员工ID查询
         if (staffId != null) {
-            Staff staff = adminService.findStaffByStaffId(staffId);
+            User staff = adminService.findStaffByStaffId(staffId);
             if (staff == null) {
                 return Result.error(404, "员工不存在");
             }
@@ -108,12 +84,12 @@ public class AdminController {
         } 
         // 按员工姓名查询
         else if (name != null && !name.trim().isEmpty()) {
-            List<Staff> staffs = adminService.findStaffByName(name);
+            List<User> staffs = adminService.findStaffByName(name);
             return Result.success(staffs);
         } 
         // 查询所有员工
         else {
-            List<Staff> staffs = adminService.findAllStaffs();
+            List<User> staffs = adminService.findAllStaffs();
             return Result.success(staffs);
         }
     }
@@ -121,17 +97,17 @@ public class AdminController {
     /**
      * 添加新员工
      * 
-     * @param staff 员工信息对象
+     * @param staff 员工用户对象
      * @return Result 返回添加成功的员工信息，包含员工ID和姓名
      */
     @PostMapping("/staffs")
-    public Result addStaff(@RequestBody Staff staff) {
+    public Result addStaff(@RequestBody User staff) {
         try {
             adminService.addStaff(staff);
             
             // 构建返回结果，包含员工ID和姓名
             Map<String, Object> result = new HashMap<>();
-            result.put("staffId", staff.getStaffId());
+            result.put("userId", staff.getUserId());
             result.put("name", staff.getName());
             
             return Result.success("添加员工成功", result);
@@ -150,21 +126,21 @@ public class AdminController {
      * 更新员工信息
      * 
      * @param staffId 路径参数，要更新的员工ID
-     * @param staff 请求体中的员工信息对象
+     * @param staff 请求体中的员工用户对象
      * @return Result 返回更新结果，包含被更新的员工ID
      */
     @PutMapping("/staffs/{staffId}")
     public Result updateStaff(
             @PathVariable Integer staffId,
-            @RequestBody Staff staff) {
+            @RequestBody User staff) {
         try {
             // 将路径中的员工ID设置到员工对象中
-            staff.setStaffId(staffId);
+            staff.setUserId(staffId.toString());
             adminService.updateStaff(staff);
             
             // 构建返回结果，包含员工ID
             Map<String, Object> result = new HashMap<>();
-            result.put("staffId", staffId);
+            result.put("userId", staffId);
             
             return Result.success("更新员工信息成功", result);
         } 
@@ -215,19 +191,17 @@ public class AdminController {
      * 更新管理员个人信息
      * 
      * @param adminId 路径参数，要更新信息的管理员ID
-     * @param admin 请求体中的管理员信息对象
+     * @param admin 请求体中的管理员用户对象
      * @return Result 返回更新结果
      */
     @PutMapping("/{adminId}")
-    public Result update(@PathVariable Integer adminId, @RequestBody Admin admin) {
+    public Result update(@PathVariable Integer adminId, @RequestBody User admin) {
         // 验证管理员ID不能为空
         if (adminId == null) {
             return Result.error(400, "管理员 ID 不能为空");
         }
         
         try {
-            // 将路径中的管理员ID设置到管理员对象中
-            admin.setAdminId(adminId);
             adminService.update(adminId, admin);
             return Result.success("个人信息更新成功");
         } 

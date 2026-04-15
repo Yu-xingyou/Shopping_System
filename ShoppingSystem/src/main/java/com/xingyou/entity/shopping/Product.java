@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * 商品实体类
  * 用于存储购物系统中的商品信息
@@ -30,7 +32,7 @@ public class Product {
     /**
      * 商品价格
      */
-    private Double price;
+    private BigDecimal price;
     
     /**
      * 商品库存数量

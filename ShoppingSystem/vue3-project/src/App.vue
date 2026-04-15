@@ -35,7 +35,7 @@ const handleLogout = () => {
 }
 
 const goToProfile = () => {
-  if (currentUser.value?.role === 'user') {
+  if (currentUser.value?.role === 0 || currentUser.value?.role === 'user') {
     router.push('/profile')
   }
 }
@@ -64,42 +64,42 @@ watch(() => route.path, () => {
         <div class="nav-links">
           <RouterLink to="/products" class="nav-item">商品列表</RouterLink>
           <RouterLink
-            v-if="currentUser?.role === 'user'"
+            v-if="currentUser?.role === 0 || currentUser?.role === 'user'"
             to="/user-orders"
             class="nav-item"
           >
             我的订单
           </RouterLink>
           <RouterLink
-            v-if="currentUser?.role === 'staff' || currentUser?.role === 'admin'"
+            v-if="currentUser?.role === 1 || currentUser?.role === 2 || currentUser?.role === 'staff' || currentUser?.role === 'admin'"
             to="/orders"
             class="nav-item"
           >
             订单管理
           </RouterLink>
           <RouterLink
-            v-if="currentUser?.role === 'admin'"
+            v-if="currentUser?.role === 2 || currentUser?.role === 'admin'"
             to="/staffs"
             class="nav-item"
           >
             员工管理
           </RouterLink>
           <RouterLink
-            v-if="currentUser?.role === 'staff'"
+            v-if="currentUser?.role === 1 || currentUser?.role === 'staff'"
             to="/users"
             class="nav-item"
           >
             用户管理
           </RouterLink>
           <RouterLink
-            v-if="currentUser?.role === 'admin'"
+            v-if="currentUser?.role === 2 || currentUser?.role === 'admin'"
             to="/admin/revenue"
             class="nav-item revenue-link"
           >
             我的收益
           </RouterLink>
           <RouterLink
-            v-if="currentUser?.role === 'admin'"
+            v-if="currentUser?.role === 2 || currentUser?.role === 'admin'"
             to="/admin/hot-products"
             class="nav-item"
           >

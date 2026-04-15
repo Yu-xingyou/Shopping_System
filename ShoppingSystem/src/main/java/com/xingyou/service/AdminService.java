@@ -1,7 +1,5 @@
 package com.xingyou.service;
 
-import com.xingyou.entity.people.Admin;
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import org.springframework.stereotype.Service;
@@ -52,9 +50,9 @@ public interface AdminService {
      * 
      * 获取系统中所有的员工列表信息。
      *
-     * @return List<Staff> 返回所有员工的列表，如果没有员工则返回空列表
+     * @return List<User> 返回所有员工的列表，如果没有员工则返回空列表
      */
-    List<Staff> findAllStaffs();
+    List<User> findAllStaffs();
     
     /**
      * 根据员工ID查询员工信息
@@ -62,9 +60,9 @@ public interface AdminService {
      * 查询指定员工ID的员工信息，为安全起见会清除密码字段后返回。
      *
      * @param staffId 员工ID，用于指定需要查询的员工
-     * @return Staff 返回员工对象，如果员工不存在则返回null；密码字段会被设置为null以保证安全
+     * @return User 返回员工用户对象，如果员工不存在则返回null；密码字段会被设置为null以保证安全
      */
-    Staff findStaffByStaffId(Integer staffId);
+    User findStaffByStaffId(Integer staffId);
     
     /**
      * 根据员工姓名模糊查询员工
@@ -72,19 +70,19 @@ public interface AdminService {
      * 根据提供的员工姓名进行模糊匹配查询，返回所有匹配的员工列表。
      *
      * @param name 员工姓名（支持模糊匹配），用于搜索包含该姓名的员工
-     * @return List<Staff> 返回匹配的员工列表，如果没有匹配结果则返回空列表
+     * @return List<User> 返回匹配的员工列表，如果没有匹配结果则返回空列表
      */
-    List<Staff> findStaffByName(String name);
+    List<User> findStaffByName(String name);
     
     /**
      * 新增员工
      * 
      * 验证员工信息的合法性后，将新员工添加到系统中。
-     * 默认状态设置为启用（status=1）。
+     * 默认状态设置为启用（status=1），角色设置为员工（role=1）。
      *
-     * @param staff 员工对象，包含待添加的员工信息，必须包含姓名和密码
+     * @param staff 员工用户对象，包含待添加的员工信息，必须包含姓名和密码
      */
-    void addStaff(Staff staff);
+    void addStaff(User staff);
     
     /**
      * 更新员工信息
@@ -92,9 +90,9 @@ public interface AdminService {
      * 验证员工ID和状态信息的合法性后，更新系统中已有员工的信息。
      * 员工状态必须在有效范围内（1-正常、2-冻结、3-离职）。
      *
-     * @param staff 员工对象，包含待更新的员工信息，必须包含有效的员工ID
+     * @param staff 员工用户对象，包含待更新的员工信息，必须包含有效的用户ID
      */
-    void updateStaff(Staff staff);
+    void updateStaff(User staff);
     
     /**
      * 更新商品库存
@@ -116,7 +114,7 @@ public interface AdminService {
      * @param adminId 管理员ID,用于标识登录的管理员
      * @param password 密码,用于验证管理员身份
      * @return Map<String, Object> 登录成功时返回包含管理员信息和JWT令牌的Map:
-     *         - admin: 管理员对象(密码已清除)
+     *         - user: 管理员用户对象(密码已清除)
      *         - token: JWT认证令牌
      */
     Map<String, Object> login(Integer adminId, String password);
@@ -137,9 +135,9 @@ public interface AdminService {
      * 只更新提供的非空字段，未提供的字段保持原值不变。
      *
      * @param adminId 管理员ID，用于指定需要更新的管理员
-     * @param admin 管理员对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
+     * @param admin 管理员用户对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      */
-    void update(Integer adminId, Admin admin);
+    void update(Integer adminId, User admin);
     
     /**
      * 查询管理员总收益（按时间范围筛选）

@@ -1,9 +1,10 @@
 package com.xingyou.controller;
 
 import com.xingyou.common.Result;
-import com.xingyou.entity.people.Staff;
 import com.xingyou.entity.people.User;
+import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
+import com.xingyou.service.AdminService;
 import com.xingyou.service.StaffService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -18,27 +19,8 @@ public class StaffController {
     @Autowired
     private StaffService staffService;
     
-    /**
-     * 员工登录接口
-     * 
-     * @param staff 员工信息对象，必须包含员工ID和密码
-     * @return Result 返回登录结果，成功时包含员工信息和JWT令牌
-     * @throws IllegalArgumentException 当员工ID为空或密码为空时抛出异常
-     */
-    @PostMapping("/login")
-    public Result login(@RequestBody Staff staff) {
-        if (staff.getStaffId() == null) {
-            throw new IllegalArgumentException("员工 ID 不能为空");
-        }
-        
-        if (staff.getPassword() == null || staff.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException("密码不能为空");
-        }
-        
-        Map<String, Object> loginResult = staffService.login(staff.getStaffId(), staff.getPassword());
-        
-        return Result.success(loginResult);
-    }
+    @Autowired
+    private AdminService adminService;
     
     /**
      * 查询用户信息接口
@@ -74,14 +56,25 @@ public class StaffController {
     }
     
     /**
-     * 更新员工信息接口
+     * 查询所有订单列表
+     * 
+     * @return Result 返回包含所有订单信息的列表
+     */
+    @GetMapping("/orders")
+    public Result getOrders() {
+        List<Order> orders = adminService.findAllOrders();
+        return Result.success(orders);
+    }
+    
+    /**
+     * 更新员工个人信息接口
      * 
      * @param staffId 员工ID，从路径变量中获取
-     * @param staff 员工信息对象，包含需要更新的字段
+     * @param staff 员工用户对象，包含需要更新的字段
      * @return Result 返回更新结果，成功或失败信息
      */
     @PutMapping("/{staffId}")
-    public Result update(@PathVariable Integer staffId, @RequestBody Staff staff) {
+    public Result update(@PathVariable Integer staffId, @RequestBody User staff) {
         // 验证员工ID不能为空
         if (staffId == null) {
             return Result.error(400, "员工 ID 不能为空");
@@ -89,7 +82,7 @@ public class StaffController {
         
         // 执行更新操作并处理异常
         try {
-            staff.setStaffId(staffId);
+            staff.setUserId(staffId.toString());
             staffService.update(staffId, staff);
             return Result.success("个人信息更新成功");
         } catch (BusinessException e) {

@@ -161,7 +161,7 @@ const currentOrder = ref(null)
 const orderItems = ref([])
 
 const isStaffOrAdmin = computed(() => {
-  return currentUser.value && (currentUser.value.role === 'staff' || currentUser.value.role === 'admin')
+  return currentUser.value && (currentUser.value.role === 1 || currentUser.value.role === 2 || currentUser.value.role === 'staff' || currentUser.value.role === 'admin')
 })
 
 const loadOrders = async () => {
@@ -174,8 +174,13 @@ const loadOrders = async () => {
 
     const role = currentUser.value.role
 
-    if (role === 'admin' || role === 'staff') {
+    if (role === 2 || role === 'admin') {
       const res = await request.get('/admin/orders')
+      if (res.code === 200) {
+        orders.value = Array.isArray(res.data) ? res.data : []
+      }
+    } else if (role === 1 || role === 'staff') {
+      const res = await request.get('/staff/orders')
       if (res.code === 200) {
         orders.value = Array.isArray(res.data) ? res.data : []
       }
@@ -226,7 +231,7 @@ const updateOrderStatus = async () => {
     const res = await request.put(`/order/${statusForm.value.orderId}/status`, null, {
       params: {
         status: statusForm.value.status,
-        staffId: currentUser.value.staffId || currentUser.value.adminId
+        staffId: currentUser.value.staffId || currentUser.value.userId || 1
       }
     })
 
