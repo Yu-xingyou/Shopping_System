@@ -4,6 +4,7 @@
       <template #header>
         <div class="card-header">
           <h2>个人信息</h2>
+          <el-button @click="goBack">返回</el-button>
         </div>
       </template>
 
@@ -43,24 +44,6 @@
           <el-input v-model="profileForm.name" placeholder="请输入姓名" />
         </el-form-item>
 
-        <el-form-item label="邮箱" prop="email" v-if="isUser">
-          <el-input v-model="profileForm.email" placeholder="请输入邮箱地址" />
-        </el-form-item>
-
-        <el-form-item label="性别" prop="sex" v-if="isUser">
-          <el-radio-group v-model="profileForm.sex">
-            <el-radio :label="1">男</el-radio>
-            <el-radio :label="2">女</el-radio>
-            <el-radio :label="0">未知</el-radio>
-          </el-radio-group>
-        </el-form-item>
-
-        <el-form-item label="账户余额" v-if="isUser">
-          <el-input v-model="profileForm.money" disabled>
-            <template #append>元</template>
-          </el-input>
-        </el-form-item>
-
         <el-form-item label="修改密码">
           <el-input
             v-model="profileForm.password"
@@ -75,7 +58,6 @@
 
         <el-form-item>
           <el-button type="primary" @click="updateProfile" :loading="loading">保存修改</el-button>
-          <el-button @click="goBack">返回</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -83,14 +65,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utill/request'
 
 const router = useRouter()
 const loading = ref(false)
-const uploadingAvatar = ref(false)
 const profileFormRef = ref(null)
 const fileInputRef = ref(null)
 const currentUser = ref(null)
@@ -98,15 +79,8 @@ const currentUser = ref(null)
 const profileForm = reactive({
   userId: '',
   name: '',
-  sex: 0,
-  money: 0,
   password: '',
-  email: '',
   avatar: ''
-})
-
-const isUser = computed(() => {
-  return currentUser.value && (currentUser.value.role === 0 || currentUser.value.role === 'user')
 })
 
 const rules = {
@@ -116,21 +90,7 @@ const rules = {
   name: [
     { required: true, message: '姓名不能为空', trigger: 'blur' },
     { min: 1, max: 50, message: '姓名长度在 1 到 50 个字符', trigger: 'blur' }
-  ],
-  email: [
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ]
-}
-
-// 获取性别文本
-const getSexText = (sex) => {
-  const sexMap = {
-    0: '未知',
-    1: '男',
-    2: '女',
-    3: '其他'
-  }
-  return sexMap[sex] || '未知'
 }
 
 const loadUserProfile = () => {
@@ -139,9 +99,6 @@ const loadUserProfile = () => {
     currentUser.value = JSON.parse(savedUser)
     profileForm.userId = currentUser.value.userId
     profileForm.name = currentUser.value.name || ''
-    profileForm.sex = currentUser.value.sex || 0
-    profileForm.money = currentUser.value.money || 0
-    profileForm.email = currentUser.value.email || ''
     profileForm.avatar = currentUser.value.avatar || ''
   } else {
     ElMessage.error('请先登录')
@@ -157,25 +114,23 @@ const handleAvatarUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  // 验证文件类型
   if (!file.type.startsWith('image/')) {
     ElMessage.error('请选择图片文件')
     return
   }
 
-  // 验证文件大小（5MB）
   if (file.size > 5 * 1024 * 1024) {
     ElMessage.error('图片大小不能超过 5MB')
     return
   }
 
-  uploadingAvatar.value = true
+  loading.value = true
   try {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('userId', profileForm.userId)
+    formData.append('adminId', profileForm.userId)
 
-    const res = await request.post('/user/avatar/upload', formData, {
+    const res = await request.post('/admin/avatar/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -185,7 +140,6 @@ const handleAvatarUpload = async (event) => {
       ElMessage.success('头像上传成功')
       profileForm.avatar = res.data.avatarUrl
 
-      // 更新本地存储的用户信息
       const updatedUser = {
         ...currentUser.value,
         avatar: res.data.avatarUrl
@@ -196,8 +150,7 @@ const handleAvatarUpload = async (event) => {
     console.error(error)
     ElMessage.error(error.response?.data?.message || '头像上传失败')
   } finally {
-    uploadingAvatar.value = false
-    // 清空文件输入，允许重复选择同一文件
+    loading.value = false
     event.target.value = ''
   }
 }
@@ -209,59 +162,19 @@ const updateProfile = async () => {
     if (valid) {
       loading.value = true
       try {
-        let url = ''
-        let requestData = {}
+        const url = `/admin/${profileForm.userId}`
+        const requestData = {
+          userId: profileForm.userId,
+          name: profileForm.name
+        }
 
-        // 根据角色判断请求路径
-        if (currentUser.value.role === 0 || currentUser.value.role === 'user') {
-          // 普通用户
-          url = `/user/${profileForm.userId}`
-          requestData = {
-            userId: profileForm.userId,
-            name: profileForm.name,
-            sex: profileForm.sex,
-            email: profileForm.email
+        if (profileForm.password && profileForm.password.trim()) {
+          if (profileForm.password.length < 6) {
+            ElMessage.error('密码长度不能少于 6 位')
+            loading.value = false
+            return
           }
-          if (profileForm.password && profileForm.password.trim()) {
-            if (profileForm.password.length < 6) {
-              ElMessage.error('密码长度不能少于 6 位')
-              loading.value = false
-              return
-            }
-            requestData.password = profileForm.password
-          }
-        } else if (currentUser.value.role === 1 || currentUser.value.role === 'staff') {
-          // 员工
-          url = `/staff/${profileForm.userId}`
-          requestData = {
-            userId: profileForm.userId,
-            name: profileForm.name,
-            email: profileForm.email
-          }
-          if (profileForm.password && profileForm.password.trim()) {
-            if (profileForm.password.length < 6) {
-              ElMessage.error('密码长度不能少于 6 位')
-              loading.value = false
-              return
-            }
-            requestData.password = profileForm.password
-          }
-        } else if (currentUser.value.role === 2 || currentUser.value.role === 'admin') {
-          // 管理员
-          url = `/admin/${profileForm.userId}`
-          requestData = {
-            userId: profileForm.userId,
-            name: profileForm.name,
-            email: profileForm.email
-          }
-          if (profileForm.password && profileForm.password.trim()) {
-            if (profileForm.password.length < 6) {
-              ElMessage.error('密码长度不能少于 6 位')
-              loading.value = false
-              return
-            }
-            requestData.password = profileForm.password
-          }
+          requestData.password = profileForm.password
         }
 
         const res = await request.put(url, requestData)
@@ -269,19 +182,14 @@ const updateProfile = async () => {
         if (res.code === 200) {
           ElMessage.success('个人信息更新成功')
 
-          // 更新本地存储的用户信息
           const updatedUser = {
             ...currentUser.value,
-            name: profileForm.name,
-            email: profileForm.email
-          }
-          if (currentUser.value.role === 0 || currentUser.value.role === 'user') {
-            updatedUser.sex = profileForm.sex
+            name: profileForm.name
           }
           localStorage.setItem('currentUser', JSON.stringify(updatedUser))
 
           setTimeout(() => {
-            router.go(-1)
+            router.push('/products')
           }, 1000)
         }
       } catch (error) {
@@ -295,7 +203,7 @@ const updateProfile = async () => {
 }
 
 const goBack = () => {
-  router.go(-1)
+  router.push('/products')
 }
 
 onMounted(() => {
@@ -391,3 +299,4 @@ onMounted(() => {
   color: #909399;
 }
 </style>
+

@@ -135,12 +135,12 @@ public class UserServiceImpl implements UserService {
     /**
      * 更新用户信息
      * 
-     * 验证用户存在性后，选择性更新用户的姓名、性别和密码信息。
+     * 验证用户存在性后，选择性更新用户的姓名、性别、密码、邮箱和头像信息。
      * 只更新提供的非空字段，未提供的字段保持原值不变。
      * 更新后会验证受影响的行数，确保操作成功。
      *
      * @param userId 用户ID，用于指定需要更新的用户
-     * @param user 用户对象，包含待更新的信息（姓名、性别、密码），只有非空字段会被更新
+     * @param user 用户对象，包含待更新的信息（姓名、性别、密码、邮箱、头像），只有非空字段会被更新
      * @throws BusinessException 当验证失败或更新异常时抛出业务异常：
      *         - 404: 用户不存在
      *         - 500: 更新失败，请稍后重试
@@ -163,6 +163,12 @@ public class UserServiceImpl implements UserService {
         }
         if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
             existingUser.setPassword(user.getPassword());
+        }
+        if (user.getEmail() != null) {
+            existingUser.setEmail(user.getEmail());
+        }
+        if (user.getAvatar() != null) {
+            existingUser.setAvatar(user.getAvatar());
         }
         
         int rows = userMapper.update(existingUser);

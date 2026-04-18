@@ -19,12 +19,14 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/user/login",
                         "/user/register",
+                        "/user/captcha",
+                        "/user/password/forgot",  // 新增
+                        "/user/password/reset",   // 新增
                         "/admin/login",
                         "/staff/login",
                         "/product/**",
-                        "/favorite/**",
-                        "/order/all", // Allow public access if needed, or remove if only for admins
-                        "/order/top-selling"
+                        "/favorite/**"
                 );
     }
+
 }

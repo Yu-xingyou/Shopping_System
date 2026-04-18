@@ -1,6 +1,18 @@
 spring:
   application:
     name: ShoppingSystem
+  mail:
+    host: smtp.qq.com  # QQ 邮箱 SMTP 服务器
+    port: 465           # SSL 端口
+    username: yu-xingyou@foxmail.com  # 你的 QQ 邮箱
+    password: geoujynkvqtvcjde  # 授权码（不是 QQ 密码！）
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true  # 启用 SSL
+          auth: true
+
 
   datasource:
     url: jdbc:mysql://localhost:3306/shopping_system
@@ -33,3 +45,4 @@ aliyun:
     endpoint: https://oss-cn-beijing.aliyuncs.com
     bucketName: shopping-exam
     region: cn-beijing
+

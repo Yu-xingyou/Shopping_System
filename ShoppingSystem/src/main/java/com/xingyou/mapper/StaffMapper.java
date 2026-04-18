@@ -21,7 +21,7 @@ public interface StaffMapper {
      * @param staffId 员工ID
      * @return 员工用户对象，不存在则返回null
      */
-    User findByStaffId(@Param("staffId") Integer staffId);
+    User findByStaffId(@Param("staffId") String staffId);
     
     /**
      * 根据员工ID查询员工信息（用于登录验证）
@@ -29,7 +29,7 @@ public interface StaffMapper {
      * @param staffId 员工ID
      * @return 员工用户对象，不存在则返回null
      */
-    User findById(@Param("staffId") Integer staffId);
+    User findById(@Param("staffId") String staffId);
     
     /**
      * 选择性更新员工信息

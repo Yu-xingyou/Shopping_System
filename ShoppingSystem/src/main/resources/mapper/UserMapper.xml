@@ -40,4 +40,11 @@
         </set>
         WHERE user_id = #{userId}
     </update>
+
+    <!-- 根据邮箱查询用户 -->
+    <select id="findByEmail" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user
+        WHERE email = #{email}
+    </select>
+
 </mapper>

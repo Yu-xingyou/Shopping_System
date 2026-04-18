@@ -27,7 +27,7 @@ public interface StaffService {
      *         - user: 员工用户对象
      *         - token: JWT认证令牌
      */
-    Map<String, Object> login(Integer staffId, String password);
+    Map<String, Object> login(String staffId, String password);
     
     /**
      * 更新员工信息
@@ -39,7 +39,7 @@ public interface StaffService {
      * @param staffId 员工ID，用于指定需要更新的员工
      * @param staff 员工用户对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      */
-    void update(Integer staffId, User staff);
+    void update(String staffId, User staff);
     
     /**
      * 查询所有用户

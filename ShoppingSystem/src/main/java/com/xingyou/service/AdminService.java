@@ -62,7 +62,7 @@ public interface AdminService {
      * @param staffId 员工ID，用于指定需要查询的员工
      * @return User 返回员工用户对象，如果员工不存在则返回null；密码字段会被设置为null以保证安全
      */
-    User findStaffByStaffId(Integer staffId);
+    User findStaffByStaffId(String staffId);
     
     /**
      * 根据员工姓名模糊查询员工
@@ -117,7 +117,7 @@ public interface AdminService {
      *         - user: 管理员用户对象(密码已清除)
      *         - token: JWT认证令牌
      */
-    Map<String, Object> login(Integer adminId, String password);
+    Map<String, Object> login(String adminId, String password);
     
     /**
      * 查询所有订单
@@ -137,7 +137,7 @@ public interface AdminService {
      * @param adminId 管理员ID，用于指定需要更新的管理员
      * @param admin 管理员用户对象，包含待更新的信息（姓名、密码），只有非空字段会被更新
      */
-    void update(Integer adminId, User admin);
+    void update(String adminId, User admin);
     
     /**
      * 查询管理员总收益（按时间范围筛选）

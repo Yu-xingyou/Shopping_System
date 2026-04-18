@@ -38,6 +38,17 @@
           />
         </el-form-item>
 
+        <el-form-item label="验证码" prop="captcha">
+          <el-input
+            v-model="loginForm.captcha"
+            placeholder="请输入验证码"
+            prefix-icon="Key"
+            size="large"
+            @keyup.enter="handleLogin"
+          />
+          <img :src="captchaImage" @click="refreshCaptcha" class="captcha-image" />
+        </el-form-item>
+
         <el-form-item>
           <el-button
             type="primary"
@@ -53,6 +64,8 @@
         <div class="register-link">
           没有账号？
           <el-link type="primary" @click="goToRegister">立即注册</el-link>
+          <span style="margin: 0 10px; color: #666">|</span>
+          <el-link type="primary" @click="goToForgotPassword">忘记密码</el-link>
         </div>
       </el-form>
     </div>
@@ -60,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utill/request'
@@ -71,7 +84,9 @@ const loading = ref(false)
 
 const loginForm = reactive({
   userId: '',
-  password: ''
+  password: '',
+  captcha: '',
+  captchaToken: ''
 })
 
 const rules = {
@@ -80,7 +95,28 @@ const rules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' }
+  ],
+  captcha: [
+    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
+}
+
+const captchaImage = ref('')
+
+const refreshCaptcha = async () => {
+  try {
+    const res = await request.get('/user/captcha')
+    if (res.code === 200) {
+      captchaImage.value = res.data.image
+      loginForm.captchaToken = res.data.token
+      loginForm.captcha = ''
+    } else {
+      ElMessage.error(res.message || '获取验证码失败')
+    }
+  } catch (error) {
+    console.error('获取验证码失败:', error)
+    ElMessage.error('获取验证码失败：' + (error.response?.data?.message || '网络错误'))
+  }
 }
 
 const handleLogin = async () => {
@@ -88,7 +124,6 @@ const handleLogin = async () => {
 
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
-      // 验证账号格式
       if (!loginForm.userId.startsWith('U') && !/^\d+$/.test(loginForm.userId)) {
         ElMessage.error('账号格式不正确：普通用户账号以U开头，员工/管理员使用数字ID')
         return
@@ -96,37 +131,36 @@ const handleLogin = async () => {
 
       loading.value = true
       try {
-        // 调用统一登录接口，后端自动识别角色
         const res = await request.post('/user/login', {
           userId: loginForm.userId,
-          password: loginForm.password
+          password: loginForm.password,
+          captchaToken: loginForm.captchaToken,
+          captcha: loginForm.captcha
         })
 
         if (res.code === 200) {
           const token = res.data.token
           const userData = res.data.user
 
-          // 保存用户信息和token
           localStorage.setItem('token', token)
           localStorage.setItem('currentUser', JSON.stringify(userData))
           ElMessage.success('登录成功')
 
-          // 根据用户角色跳转到不同页面
           const userRole = userData.role
           if (userRole === 2) {
-            // 管理员
             router.push('/admin/dashboard')
           } else if (userRole === 1) {
-            // 员工
             router.push('/products')
           } else {
-            // 普通用户
             router.push('/products')
           }
+        } else {
+          refreshCaptcha()
         }
       } catch (error) {
         console.error('登录失败:', error)
         ElMessage.error('登录失败：' + (error.response?.data?.message || '账号或密码错误'))
+        refreshCaptcha()
       } finally {
         loading.value = false
       }
@@ -141,6 +175,15 @@ const goToRegister = () => {
 const goBackToHome = () => {
   router.push('/')
 }
+
+const goToForgotPassword = () => {
+  router.push('/forgot-password')
+}
+
+// 页面加载时获取验证码
+onMounted(() => {
+  refreshCaptcha()
+})
 </script>
 
 <style scoped>
@@ -177,6 +220,25 @@ const goBackToHome = () => {
   text-align: center;
   margin-top: 16px;
   color: #666;
+}
+
+.captcha-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.captcha-image {
+  height: 40px;
+  cursor: pointer;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.captcha-image:hover {
+  border-color: #409EFF;
+  box-shadow: 0 0 5px rgba(64, 158, 255, 0.3);
 }
 </style>
 

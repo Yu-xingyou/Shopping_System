@@ -37,7 +37,7 @@ public class StaffServiceImpl implements StaffService {
      *         - 403: 登录失败（账号被冻结、离职或状态异常）
      */
     @Override
-    public Map<String, Object> login(Integer staffId, String password) {
+    public Map<String, Object> login(String staffId, String password) {
         log.info("员工登录请求 - staffId: {}", staffId);
         
         User staff = staffMapper.findById(staffId);
@@ -113,7 +113,7 @@ public class StaffServiceImpl implements StaffService {
      *         - 500: 更新失败，请稍后重试
      */
     @Override
-    public void update(Integer staffId, User staff) {
+    public void update(String staffId, User staff) {
         log.info("更新员工信息请求 - staffId: {}", staffId);
         
         User existingStaff = staffMapper.findByStaffId(staffId);

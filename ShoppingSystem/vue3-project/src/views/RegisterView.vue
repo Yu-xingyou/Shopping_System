@@ -50,6 +50,24 @@
           />
         </el-form-item>
 
+        <el-form-item label="验证码" prop="captcha">
+          <div class="captcha-wrapper">
+            <el-input
+              v-model="registerForm.captcha"
+              placeholder="请输入验证码"
+              prefix-icon="Key"
+              size="large"
+              style="width: 150px"
+            />
+            <img
+              :src="captchaImage"
+              @click="refreshCaptcha"
+              class="captcha-image"
+              title="点击刷新验证码"
+            />
+          </div>
+        </el-form-item>
+
         <el-form-item>
           <el-button
             type="primary"
@@ -72,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utill/request'
@@ -80,12 +98,15 @@ import request from '@/utill/request'
 const router = useRouter()
 const registerFormRef = ref(null)
 const loading = ref(false)
+const captchaImage = ref('')
 
 const registerForm = reactive({
   name: '',
   sex: '男',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  captcha: '',
+  captchaToken: ''
 })
 
 const validateConfirmPassword = (rule, value, callback) => {
@@ -107,7 +128,24 @@ const rules = {
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
+  ],
+  captcha: [
+    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
+}
+
+const refreshCaptcha = async () => {
+  try {
+    const res = await request.get('/user/captcha')
+    if (res.code === 200) {
+      captchaImage.value = res.data.image
+      registerForm.captchaToken = res.data.token
+      registerForm.captcha = ''
+    }
+  } catch (error) {
+    console.error('获取验证码失败:', error)
+    ElMessage.error('获取验证码失败')
+  }
 }
 
 const handleRegister = async () => {
@@ -117,18 +155,29 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
       try {
-        const res = await request.post('/user/register', {
-          name: registerForm.name,
-          sex: registerForm.sex,
-          password: registerForm.password
+        const params = new URLSearchParams()
+        params.append('name', registerForm.name)
+        params.append('sex', registerForm.sex)
+        params.append('password', registerForm.password)
+        params.append('captchaToken', registerForm.captchaToken)
+        params.append('captcha', registerForm.captcha)
+
+        const res = await request.post('/user/register', params, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
         })
 
         if (res.code === 200) {
           ElMessage.success(res.message || '注册成功，请牢记您的账号！')
           router.push('/login')
+        } else {
+          refreshCaptcha()
         }
       } catch (error) {
-        console.error(error)
+        console.error('注册失败:', error)
+        ElMessage.error('注册失败：' + (error.response?.data?.message || '请稍后重试'))
+        refreshCaptcha()
       } finally {
         loading.value = false
       }
@@ -139,6 +188,10 @@ const handleRegister = async () => {
 const goToLogin = () => {
   router.push('/login')
 }
+
+onMounted(() => {
+  refreshCaptcha()
+})
 </script>
 
 <style scoped>
@@ -171,5 +224,23 @@ const goToLogin = () => {
   margin-top: 16px;
   color: #666;
 }
+
+.captcha-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.captcha-image {
+  height: 40px;
+  cursor: pointer;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.captcha-image:hover {
+  border-color: #409EFF;
+  box-shadow: 0 0 5px rgba(64, 158, 255, 0.3);
+}
 </style>
-ZEN

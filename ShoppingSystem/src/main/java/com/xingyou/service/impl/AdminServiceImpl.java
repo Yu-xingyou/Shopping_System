@@ -103,7 +103,7 @@ public class AdminServiceImpl implements AdminService {
      * @return User 返回员工用户对象，如果员工不存在则返回null；密码字段会被设置为null以保证安全
      */
     @Override
-    public User findStaffByStaffId(Integer staffId) {
+    public User findStaffByStaffId(String staffId) {
         log.debug("管理员查询员工信息 - staffId: {}", staffId);
         User staff = adminMapper.findStaffByStaffId(staffId);
         
@@ -184,7 +184,7 @@ public class AdminServiceImpl implements AdminService {
             throw new BusinessException(400, "员工 ID 不能为空");
         }
         
-        User existingStaff = adminMapper.findStaffByStaffId(Integer.parseInt(staff.getUserId()));
+        User existingStaff = adminMapper.findStaffByStaffId(staff.getUserId());
         if (existingStaff == null) {
             log.warn("更新员工失败 - 员工不存在: {}", staff.getUserId());
             throw new BusinessException(404, "员工不存在");
@@ -207,7 +207,7 @@ public class AdminServiceImpl implements AdminService {
      * @throws BusinessException 当管理员不存在时抛出404异常
      */
     @Override
-    public void update(Integer adminId, User admin) {
+    public void update(String adminId, User admin) {
         log.info("更新管理员信息请求 - adminId: {}", adminId);
         
         User existingAdmin = adminMapper.findByAdminId(adminId);
@@ -293,10 +293,10 @@ public class AdminServiceImpl implements AdminService {
      *         - 401: 密码错误
      */
     @Override
-    public Map<String, Object> login(Integer adminId, String password) {
+    public Map<String, Object> login(String adminId, String password) {
         log.info("管理员登录请求 - adminId: {}", adminId);
         
-        if (adminId == null) {
+        if (adminId == null || adminId.trim().isEmpty()) {
             throw new BusinessException(400, "管理员 ID 不能为空");
         }
         if (password == null || password.trim().isEmpty()) {

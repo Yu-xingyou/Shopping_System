@@ -35,8 +35,14 @@ const handleLogout = () => {
 }
 
 const goToProfile = () => {
-  if (currentUser.value?.role === 0 || currentUser.value?.role === 'user') {
+  if (!currentUser.value) return
+
+  if (currentUser.value.role === 0 || currentUser.value.role === 'user') {
     router.push('/profile')
+  } else if (currentUser.value.role === 1 || currentUser.value.role === 'staff') {
+    router.push('/staff/profile')
+  } else if (currentUser.value.role === 2 || currentUser.value.role === 'admin') {
+    router.push('/admin/profile')
   }
 }
 
@@ -58,7 +64,15 @@ watch(() => route.path, () => {
     <header v-if="showNav" class="app-header">
       <div class="header-content">
         <div class="user-info" @click="goToProfile" style="cursor: pointer;">
-          <el-icon :size="20" style="margin-right: 8px"><User /></el-icon>
+          <div class="avatar-small">
+            <img
+              v-if="currentUser?.avatar"
+              :src="currentUser.avatar"
+              alt="头像"
+              class="avatar-img-small"
+            />
+            <el-icon v-else :size="24"><User /></el-icon>
+          </div>
           <span>{{ currentUser?.name || '未登录' }}</span>
         </div>
         <div class="nav-links">
@@ -76,6 +90,13 @@ watch(() => route.path, () => {
             class="nav-item"
           >
             订单管理
+          </RouterLink>
+          <RouterLink
+            v-if="currentUser?.role === 2 || currentUser?.role === 'admin'"
+            to="/users"
+            class="nav-item"
+          >
+            用户管理
           </RouterLink>
           <RouterLink
             v-if="currentUser?.role === 2 || currentUser?.role === 'admin'"
@@ -143,6 +164,33 @@ watch(() => route.path, () => {
   color: white;
   font-size: 16px;
   font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all 0.3s;
+}
+
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.avatar-small {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.avatar-img-small {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .nav-links {

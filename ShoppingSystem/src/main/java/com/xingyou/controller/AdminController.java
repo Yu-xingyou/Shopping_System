@@ -5,8 +5,10 @@ import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.AdminService;
+import com.xingyou.util.AliyunOSSOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +20,9 @@ public class AdminController {
     
     @Autowired
     private AdminService adminService;
+    
+    @Autowired
+    private AliyunOSSOperator aliyunOSSOperator;
     
     /**
      * 查询所有订单列表
@@ -71,11 +76,11 @@ public class AdminController {
      */
     @GetMapping("/staffs")
     public Result getStaffs(
-            @RequestParam(required = false) Integer staffId,
+            @RequestParam(required = false) String staffId,
             @RequestParam(required = false) String name) {
         
         // 按员工ID查询
-        if (staffId != null) {
+        if (staffId != null && !staffId.trim().isEmpty()) {
             User staff = adminService.findStaffByStaffId(staffId);
             if (staff == null) {
                 return Result.error(404, "员工不存在");
@@ -105,18 +110,15 @@ public class AdminController {
         try {
             adminService.addStaff(staff);
             
-            // 构建返回结果，包含员工ID和姓名
             Map<String, Object> result = new HashMap<>();
             result.put("userId", staff.getUserId());
             result.put("name", staff.getName());
             
             return Result.success("添加员工成功", result);
         } 
-        // 捕获业务异常并返回对应错误信息
         catch (BusinessException e) {
             return Result.error(e.getCode(), e.getMessage());
         } 
-        // 捕获其他异常并返回通用错误信息
         catch (Exception e) {
             return Result.error(500, "添加员工失败：" + e.getMessage());
         }
@@ -131,24 +133,20 @@ public class AdminController {
      */
     @PutMapping("/staffs/{staffId}")
     public Result updateStaff(
-            @PathVariable Integer staffId,
+            @PathVariable String staffId,
             @RequestBody User staff) {
         try {
-            // 将路径中的员工ID设置到员工对象中
-            staff.setUserId(staffId.toString());
+            staff.setUserId(staffId);
             adminService.updateStaff(staff);
             
-            // 构建返回结果，包含员工ID
             Map<String, Object> result = new HashMap<>();
             result.put("userId", staffId);
             
             return Result.success("更新员工信息成功", result);
         } 
-        // 捕获业务异常并返回对应错误信息
         catch (BusinessException e) {
             return Result.error(e.getCode(), e.getMessage());
         } 
-        // 捕获其他异常并返回通用错误信息
         catch (Exception e) {
             return Result.error(500, "更新员工信息失败：" + e.getMessage());
         }
@@ -166,22 +164,18 @@ public class AdminController {
             @PathVariable Integer id,
             @RequestBody Map<String, Integer> request) {
         try {
-            // 从请求体中获取库存数量
             Integer stock = request.get("stock");
             adminService.updateProductStock(id, stock);
             
-            // 构建返回结果，包含商品ID和库存数量
             Map<String, Object> result = new HashMap<>();
             result.put("productId", id);
             result.put("stock", stock);
             
             return Result.success("更新库存成功", result);
         } 
-        // 捕获业务异常并返回对应错误信息
         catch (BusinessException e) {
             return Result.error(e.getCode(), e.getMessage());
         } 
-        // 捕获其他异常并返回通用错误信息
         catch (Exception e) {
             return Result.error(500, "更新库存失败：" + e.getMessage());
         }
@@ -195,9 +189,8 @@ public class AdminController {
      * @return Result 返回更新结果
      */
     @PutMapping("/{adminId}")
-    public Result update(@PathVariable Integer adminId, @RequestBody User admin) {
-        // 验证管理员ID不能为空
-        if (adminId == null) {
+    public Result update(@PathVariable String adminId, @RequestBody User admin) {
+        if (adminId == null || adminId.trim().isEmpty()) {
             return Result.error(400, "管理员 ID 不能为空");
         }
         
@@ -205,11 +198,9 @@ public class AdminController {
             adminService.update(adminId, admin);
             return Result.success("个人信息更新成功");
         } 
-        // 捕获业务异常并返回对应错误信息
         catch (BusinessException e) {
             return Result.error(e.getCode(), e.getMessage());
         } 
-        // 捕获其他异常并返回通用错误信息
         catch (Exception e) {
             return Result.error(500, "更新失败：" + e.getMessage());
         }
@@ -239,5 +230,53 @@ public class AdminController {
             return Result.error(500, "查询收益失败：" + e.getMessage());
         }
     }
-
+    
+    /**
+     * 上传管理员头像
+     * 接收前端上传的图片文件，通过阿里云OSS存储后返回图片URL
+     * 
+     * @param file 上传的图片文件（支持jpg、png、jpeg格式，最大5MB）
+     * @param adminId 管理员ID
+     * @return Result 返回上传结果，成功时包含图片URL
+     */
+    @PostMapping("/avatar/upload")
+    public Result uploadAvatar(@RequestParam("file") MultipartFile file, @RequestParam("adminId") String adminId) {
+        if (file == null || file.isEmpty()) {
+            return Result.error(400, "请选择要上传的图片");
+        }
+        
+        if (adminId == null || adminId.trim().isEmpty()) {
+            return Result.error(400, "管理员ID不能为空");
+        }
+        
+        // 验证文件类型
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.matches(".*\\.(jpg|jpeg|png|gif|webp)$")) {
+            return Result.error(400, "仅支持 jpg、jpeg、png、gif、webp 格式的图片");
+        }
+        
+        // 验证文件大小（5MB）
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return Result.error(400, "图片大小不能超过 5MB");
+        }
+        
+        try {
+            byte[] bytes = file.getBytes();
+            String imageUrl = aliyunOSSOperator.upload(bytes, originalFilename);
+            
+            // 更新数据库中的头像URL
+            User updateRequest = new User();
+            updateRequest.setAvatar(imageUrl);
+            adminService.update(adminId, updateRequest);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("avatarUrl", imageUrl);
+            
+            return Result.success("头像上传成功", result);
+        } catch (BusinessException e) {
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            return Result.error(500, "头像上传失败：" + e.getMessage());
+        }
+    }
 }

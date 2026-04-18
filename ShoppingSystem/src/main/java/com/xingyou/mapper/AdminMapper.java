@@ -21,7 +21,7 @@ public interface AdminMapper {
      * @param adminId 管理员ID
      * @return 管理员用户对象
      */
-    User findByAdminId(@Param("adminId") Integer adminId);
+    User findByAdminId(@Param("adminId") String adminId);
     
     /**
      * 查询所有普通用户
@@ -54,7 +54,7 @@ public interface AdminMapper {
      * @param staffId 员工ID
      * @return 员工用户对象
      */
-    User findStaffByStaffId(@Param("staffId") Integer staffId);
+    User findStaffByStaffId(@Param("staffId") String staffId);
     
     /**
      * 根据员工姓名模糊查询

@@ -38,4 +38,12 @@ public interface UserMapper {
      * @return 受影响的行数
      */
     int update(User user);
+
+    /**
+     * 根据邮箱查询用户
+     *
+     * @param email 邮箱地址
+     * @return 用户对象
+     */
+    User findByEmail(@Param("email") String email);
 }

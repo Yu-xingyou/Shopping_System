@@ -6,9 +6,12 @@ import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.AdminService;
 import com.xingyou.service.StaffService;
+import com.xingyou.util.AliyunOSSOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +24,9 @@ public class StaffController {
     
     @Autowired
     private AdminService adminService;
+    
+    @Autowired
+    private AliyunOSSOperator aliyunOSSOperator;
     
     /**
      * 查询用户信息接口
@@ -74,21 +80,68 @@ public class StaffController {
      * @return Result 返回更新结果，成功或失败信息
      */
     @PutMapping("/{staffId}")
-    public Result update(@PathVariable Integer staffId, @RequestBody User staff) {
-        // 验证员工ID不能为空
-        if (staffId == null) {
+    public Result update(@PathVariable String staffId, @RequestBody User staff) {
+        if (staffId == null || staffId.trim().isEmpty()) {
             return Result.error(400, "员工 ID 不能为空");
         }
         
-        // 执行更新操作并处理异常
         try {
-            staff.setUserId(staffId.toString());
+            staff.setUserId(staffId);
             staffService.update(staffId, staff);
             return Result.success("个人信息更新成功");
         } catch (BusinessException e) {
             return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
             return Result.error(500, "更新失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 上传员工头像
+     * 接收前端上传的图片文件，通过阿里云OSS存储后返回图片URL
+     * 
+     * @param file 上传的图片文件（支持jpg、png、jpeg格式，最大5MB）
+     * @param staffId 员工ID
+     * @return Result 返回上传结果，成功时包含图片URL
+     */
+    @PostMapping("/avatar/upload")
+    public Result uploadAvatar(@RequestParam("file") MultipartFile file, @RequestParam("staffId") String staffId) {
+        if (file == null || file.isEmpty()) {
+            return Result.error(400, "请选择要上传的图片");
+        }
+        
+        if (staffId == null || staffId.trim().isEmpty()) {
+            return Result.error(400, "员工ID不能为空");
+        }
+        
+        // 验证文件类型
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.matches(".*\\.(jpg|jpeg|png|gif|webp)$")) {
+            return Result.error(400, "仅支持 jpg、jpeg、png、gif、webp 格式的图片");
+        }
+        
+        // 验证文件大小（5MB）
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return Result.error(400, "图片大小不能超过 5MB");
+        }
+        
+        try {
+            byte[] bytes = file.getBytes();
+            String imageUrl = aliyunOSSOperator.upload(bytes, originalFilename);
+            
+            // 更新数据库中的头像URL
+            User updateRequest = new User();
+            updateRequest.setAvatar(imageUrl);
+            staffService.update(staffId, updateRequest);
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("avatarUrl", imageUrl);
+            
+            return Result.success("头像上传成功", result);
+        } catch (BusinessException e) {
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            return Result.error(500, "头像上传失败：" + e.getMessage());
         }
     }
 

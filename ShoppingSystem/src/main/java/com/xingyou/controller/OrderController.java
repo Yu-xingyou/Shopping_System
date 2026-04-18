@@ -88,9 +88,9 @@ public class OrderController {
     public Result updateStatus(
             @PathVariable Integer id, 
             @RequestParam Integer status,
-            @RequestParam Integer staffId) {
+            @RequestParam String staffId) {
         
-        if (staffId == null) {
+        if (staffId == null || staffId.trim().isEmpty()) {
             return Result.error(403, "缺少员工身份信息");
         }
         
@@ -122,10 +122,10 @@ public class OrderController {
     @PostMapping("/{id}/cancel")
     public Result cancel(
             @PathVariable Integer id,
-            @RequestParam(required = false) Integer staffId,
+            @RequestParam(required = false) String staffId,
             @RequestParam(required = false) String userId) {
         
-        if (staffId != null) {
+        if (staffId != null && !staffId.trim().isEmpty()) {
             try {
                 orderService.cancelOrderByStaff(id);
                 return Result.success("订单已取消");
@@ -134,7 +134,7 @@ public class OrderController {
             } catch (Exception e) {
                 return Result.error(500, "取消订单失败：" + e.getMessage());
             }
-        } else if (userId != null) {
+        } else if (userId != null && !userId.trim().isEmpty()) {
             try {
                 orderService.cancelOrderByUser(id, userId);
                 return Result.success("订单已取消");
