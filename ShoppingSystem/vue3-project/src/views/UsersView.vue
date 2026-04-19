@@ -33,6 +33,33 @@
             ¥{{ row.money?.toFixed(2) || '0.00' }}
           </template>
         </el-table-column>
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 2 ? 'danger' : 'success'">
+              {{ row.status === 2 ? '已拉黑' : '正常' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.status === 2"
+              type="success"
+              size="small"
+              @click="handleUnblacklist(row.userId)"
+            >
+              解除拉黑
+            </el-button>
+            <el-button
+              v-else
+              type="danger"
+              size="small"
+              @click="handleBlacklist(row.userId)"
+            >
+              拉黑
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <div class="pagination-container">
@@ -53,7 +80,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utill/request'
 
 const router = useRouter()
@@ -102,6 +129,66 @@ const loadUsers = async () => {
     console.error(error)
     users.value = []
     total.value = 0
+  }
+}
+
+const handleBlacklist = async (userId) => {
+  try {
+    await ElMessageBox.confirm('确定要拉黑该用户吗？拉黑后用户将无法进行除浏览商品外的任何操作。', '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    const role = currentUser.value?.role
+    let url = ''
+
+    if (role === 2 || role === 'admin') {
+      url = `/admin/users/${userId}/blacklist`
+    } else if (role === 1 || role === 'staff') {
+      url = `/staff/users/${userId}/blacklist`
+    }
+
+    const res = await request.post(url)
+
+    if (res.code === 200) {
+      ElMessage.success('拉黑成功')
+      loadUsers()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error(error)
+    }
+  }
+}
+
+const handleUnblacklist = async (userId) => {
+  try {
+    await ElMessageBox.confirm('确定要解除拉黑该用户吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+
+    const role = currentUser.value?.role
+    let url = ''
+
+    if (role === 2 || role === 'admin') {
+      url = `/admin/users/${userId}/unblacklist`
+    } else if (role === 1 || role === 'staff') {
+      url = `/staff/users/${userId}/unblacklist`
+    }
+
+    const res = await request.post(url)
+
+    if (res.code === 200) {
+      ElMessage.success('解除拉黑成功')
+      loadUsers()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error(error)
+    }
   }
 }
 

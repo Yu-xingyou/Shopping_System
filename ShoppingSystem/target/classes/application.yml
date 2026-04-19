@@ -31,6 +31,17 @@ mybatis:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.xingyou: INFO
+    com.xingyou.controller.UserController: DEBUG
+    com.xingyou.controller.AdminController: DEBUG
+    com.xingyou.controller.StaffController: DEBUG
+    com.xingyou.service.impl.UserServiceImpl: DEBUG
+    com.xingyou.service.impl.AdminServiceImpl: DEBUG
+    com.xingyou.service.impl.StaffServiceImpl: DEBUG
+
 server:
   port: 8080
 

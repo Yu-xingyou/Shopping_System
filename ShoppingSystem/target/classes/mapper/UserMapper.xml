@@ -25,7 +25,7 @@
         选择性更新用户信息
 
         只更新提供的非空字段，未提供的字段保持原值不变。
-        支持更新姓名、性别、密码、邮箱、手机、头像等字段。
+        支持更新姓名、性别、密码、邮箱、手机、头像、状态等字段。
     -->
     <update id="update" parameterType="com.xingyou.entity.people.User">
         UPDATE user
@@ -37,6 +37,7 @@
             <if test="phone != null">phone = #{phone},</if>
             <if test="avatar != null">avatar = #{avatar},</if>
             <if test="money != null">money = #{money},</if>
+            <if test="status != null">status = #{status},</if>
         </set>
         WHERE user_id = #{userId}
     </update>

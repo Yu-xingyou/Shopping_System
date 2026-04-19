@@ -35,7 +35,7 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public Map<String, Object> findAll(Integer pageNum, Integer pageSize) {
-        log.debug("分页查询所有商品 - pageNum: {}, pageSize: {}", pageNum, pageSize);
+        log.info("分页查询所有商品请求 - pageNum: {}, pageSize: {}", pageNum, pageSize);
         
         PageHelper.startPage(pageNum, pageSize);
         
@@ -49,7 +49,7 @@ public class ProductServiceImpl implements ProductService {
         result.put("pageNum", pageNum);
         result.put("pageSize", pageSize);
         
-        log.debug("分页查询商品完成 - 返回数量: {}, 总数: {}", products.size(), pageInfo.getTotal());
+        log.info("分页查询商品完成 - 返回数量: {}, 总数: {}", products.size(), pageInfo.getTotal());
         return result;
     }
     
@@ -70,7 +70,9 @@ public class ProductServiceImpl implements ProductService {
      */
     @Override
     public Map<String, Object> findByCondition(Product product, Integer pageNum, Integer pageSize) {
-        log.debug("条件分页查询商品 - pageNum: {}, pageSize: {}", pageNum, pageSize);
+        log.info("条件分页查询商品请求 - pageNum: {}, pageSize: {}", pageNum, pageSize);
+        log.debug("查询条件 - name: {}, category: {}, minPrice: {}, maxPrice: {}", 
+                product.getName(), product.getCategory(), product.getMinPrice(), product.getMaxPrice());
         
         PageHelper.startPage(pageNum, pageSize);
         
@@ -84,7 +86,7 @@ public class ProductServiceImpl implements ProductService {
         result.put("pageNum", pageNum);
         result.put("pageSize", pageSize);
         
-        log.debug("条件分页查询商品完成 - 返回数量: {}, 总数: {}", products.size(), pageInfo.getTotal());
+        log.info("条件分页查询商品完成 - 返回数量: {}, 总数: {}", products.size(), pageInfo.getTotal());
         return result;
     }
     
@@ -99,7 +101,15 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Product findById(Integer id) {
         log.debug("根据ID查询商品 - id: {}", id);
-        return productMapper.findById(id);
+        Product product = productMapper.findById(id);
+        
+        if (product != null) {
+            log.debug("查询到商品信息 - id: {}, name: {}, stock: {}", id, product.getName(), product.getStock());
+        } else {
+            log.warn("商品不存在 - id: {}", id);
+        }
+        
+        return product;
     }
 
 }

@@ -5,7 +5,9 @@ import com.xingyou.entity.people.User;
 import com.xingyou.entity.shopping.Order;
 import com.xingyou.exception.BusinessException;
 import com.xingyou.service.AdminService;
+import com.xingyou.service.UserService;
 import com.xingyou.util.AliyunOSSOperator;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,12 +16,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/admin")
 public class AdminController {
     
     @Autowired
     private AdminService adminService;
+    
+    @Autowired
+    private UserService userService;
     
     @Autowired
     private AliyunOSSOperator aliyunOSSOperator;
@@ -277,6 +283,50 @@ public class AdminController {
             return Result.error(e.getCode(), e.getMessage());
         } catch (Exception e) {
             return Result.error(500, "头像上传失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 拉黑用户
+     * 
+     * @param userId 路径参数，要拉黑的用户ID
+     * @return Result 返回操作结果
+     */
+    @PostMapping("/users/{userId}/blacklist")
+    public Result blacklistUser(@PathVariable String userId) {
+        log.info("管理员发起拉黑用户请求 - userId: {}", userId);
+        try {
+            userService.blacklistUser(userId);
+            log.info("管理员拉黑用户成功 - userId: {}", userId);
+            return Result.success("拉黑用户成功");
+        } catch (BusinessException e) {
+            log.warn("管理员拉黑用户失败 - userId: {}, 原因: {}", userId, e.getMessage());
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("管理员拉黑用户异常 - userId: {}, 异常信息: {}", userId, e.getMessage(), e);
+            return Result.error(500, "拉黑用户失败：" + e.getMessage());
+        }
+    }
+    
+    /**
+     * 解除拉黑用户
+     * 
+     * @param userId 路径参数，要解除拉黑的用户ID
+     * @return Result 返回操作结果
+     */
+    @PostMapping("/users/{userId}/unblacklist")
+    public Result unblacklistUser(@PathVariable String userId) {
+        log.info("管理员发起解除拉黑用户请求 - userId: {}", userId);
+        try {
+            userService.unblacklistUser(userId);
+            log.info("管理员解除拉黑用户成功 - userId: {}", userId);
+            return Result.success("解除拉黑成功");
+        } catch (BusinessException e) {
+            log.warn("管理员解除拉黑用户失败 - userId: {}, 原因: {}", userId, e.getMessage());
+            return Result.error(e.getCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("管理员解除拉黑用户异常 - userId: {}, 异常信息: {}", userId, e.getMessage(), e);
+            return Result.error(500, "解除拉黑失败：" + e.getMessage());
         }
     }
 }

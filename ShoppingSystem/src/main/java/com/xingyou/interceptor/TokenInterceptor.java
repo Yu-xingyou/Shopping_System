@@ -1,9 +1,11 @@
 package com.xingyou.interceptor;
 
+import com.xingyou.service.UserService;
 import com.xingyou.util.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -13,6 +15,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
  */
 @Component
 public class TokenInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private UserService userService;
 
     /**
      * 在请求处理之前进行调用（Controller方法调用之前）
@@ -65,6 +70,24 @@ public class TokenInterceptor implements HandlerInterceptor {
             String name = claims.get("name", String.class);
             if (name != null) {
                 request.setAttribute("userName", name);
+            }
+            
+            // 检查用户是否被拉黑（仅对普通用户role=0进行检查）
+            if (role != null && role == 0 && userId != null) {
+                if (userService.isUserBlacklisted(userId)) {
+                    // 被拉黑的用户只能访问商品相关接口
+                    String requestURI = request.getRequestURI();
+                    boolean canAccess = requestURI.startsWith("/product/") || 
+                                       requestURI.equals("/product") ||
+                                       requestURI.startsWith("/order/top-selling");
+                    
+                    if (!canAccess) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"code\":403,\"message\":\"您的账号已被拉黑，只能浏览商品\",\"data\":null}");
+                        return false;
+                    }
+                }
             }
             
             // 权限验证：根据请求路径验证角色权限

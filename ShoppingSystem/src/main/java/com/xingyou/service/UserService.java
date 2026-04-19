@@ -1,6 +1,7 @@
 package com.xingyou.service;
 
 import com.xingyou.entity.people.User;
+import com.xingyou.exception.BusinessException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -60,4 +61,34 @@ public interface UserService {
      * @param user 用户对象，包含待更新的信息（姓名、性别、密码），只有非空字段会被更新
      */
     void update(String userId, User user);
+
+    /**
+     * 拉黑用户
+     * 
+     * 将指定用户设置为拉黑状态（status=2），被拉黑的用户只能浏览商品，无法进行其他操作。
+     *
+     * @param userId 用户ID，用于指定需要拉黑的用户
+     * @throws BusinessException 当用户不存在或不是普通用户时抛出异常
+     */
+    void blacklistUser(String userId);
+
+    /**
+     * 解除拉黑用户
+     * 
+     * 将指定用户从拉黑状态恢复正常（status=1）。
+     *
+     * @param userId 用户ID，用于指定需要解除拉黑的用户
+     * @throws BusinessException 当用户不存在时抛出异常
+     */
+    void unblacklistUser(String userId);
+
+    /**
+     * 检查用户是否被拉黑
+     * 
+     * 查询用户的拉黑状态。
+     *
+     * @param userId 用户ID
+     * @return true-已被拉黑（status=2），false-正常
+     */
+    boolean isUserBlacklisted(String userId);
 }

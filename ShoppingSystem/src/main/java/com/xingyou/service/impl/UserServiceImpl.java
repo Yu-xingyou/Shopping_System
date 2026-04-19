@@ -181,6 +181,116 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 拉黑用户
+     * 
+     * 验证用户存在性后，将用户状态设置为已拉黑（status=2）。
+     * 被拉黑的用户只能浏览商品，无法进行其他操作。
+     *
+     * @param userId 用户ID，用于指定需要拉黑的用户
+     * @throws BusinessException 当验证失败或更新异常时抛出业务异常：
+     *         - 404: 用户不存在
+     *         - 400: 不能拉黑员工或管理员
+     *         - 500: 拉黑失败，请稍后重试
+     */
+    @Override
+    public void blacklistUser(String userId) {
+        log.info("========== 开始拉黑用户 ==========");
+        log.info("拉黑用户请求 - userId: {}", userId);
+        
+        User existingUser = userMapper.findByUserId(userId);
+        if (existingUser == null) {
+            log.warn("拉黑失败 - 用户不存在: {}", userId);
+            throw new BusinessException(404, "用户不存在");
+        }
+        
+        log.debug("查询到用户信息 - userId: {}, name: {}, role: {}, 当前status: {}", 
+                userId, existingUser.getName(), existingUser.getRole(), existingUser.getStatus());
+        
+        if (existingUser.getRole() != null && existingUser.getRole() != 0) {
+            log.warn("拉黑失败 - 不能拉黑员工或管理员 - userId: {}, role: {}", userId, existingUser.getRole());
+            throw new BusinessException(400, "不能拉黑员工或管理员");
+        }
+        
+        log.info("准备更新用户状态 - userId: {}, 新status: 2", userId);
+        User updateUser = new User();
+        updateUser.setUserId(userId);
+        updateUser.setStatus(2);
+        
+        int rows = userMapper.update(updateUser);
+        log.debug("数据库更新影响行数: {}", rows);
+        
+        if (rows != 1) {
+            log.error("拉黑用户失败 - userId: {}, 影响行数: {}", userId, rows);
+            throw new BusinessException(500, "拉黑失败，请稍后重试");
+        }
+        
+        log.info("✓ 拉黑用户成功 - userId: {}, userName: {}", userId, existingUser.getName());
+        log.info("========== 拉黑用户完成 ==========");
+    }
+
+    /**
+     * 解除拉黑用户
+     * 
+     * 验证用户存在性后，将用户状态从已拉黑恢复正常（status=1）。
+     *
+     * @param userId 用户ID，用于指定需要解除拉黑的用户
+     * @throws BusinessException 当验证失败或更新异常时抛出业务异常：
+     *         - 404: 用户不存在
+     *         - 500: 解除拉黑失败，请稍后重试
+     */
+    @Override
+    public void unblacklistUser(String userId) {
+        log.info("========== 开始解除拉黑用户 ==========");
+        log.info("解除拉黑用户请求 - userId: {}", userId);
+        
+        User existingUser = userMapper.findByUserId(userId);
+        if (existingUser == null) {
+            log.warn("解除拉黑失败 - 用户不存在: {}", userId);
+            throw new BusinessException(404, "用户不存在");
+        }
+        
+        log.debug("查询到用户信息 - userId: {}, name: {}, role: {}, 当前status: {}", 
+                userId, existingUser.getName(), existingUser.getRole(), existingUser.getStatus());
+        
+        log.info("准备更新用户状态 - userId: {}, 新status: 1", userId);
+        User updateUser = new User();
+        updateUser.setUserId(userId);
+        updateUser.setStatus(1);
+        
+        int rows = userMapper.update(updateUser);
+        log.debug("数据库更新影响行数: {}", rows);
+        
+        if (rows != 1) {
+            log.error("解除拉黑用户失败 - userId: {}, 影响行数: {}", userId, rows);
+            throw new BusinessException(500, "解除拉黑失败，请稍后重试");
+        }
+        
+        log.info("✓ 解除拉黑用户成功 - userId: {}, userName: {}", userId, existingUser.getName());
+        log.info("========== 解除拉黑用户完成 ==========");
+    }
+
+    /**
+     * 检查用户是否被拉黑
+     * 
+     * 查询用户的状态，判断是否为已拉黑状态。
+     *
+     * @param userId 用户ID
+     * @return true-已被拉黑（status=2），false-正常（status=1或其他）
+     */
+    @Override
+    public boolean isUserBlacklisted(String userId) {
+        User user = userMapper.findByUserId(userId);
+        if (user == null) {
+            log.debug("检查拉黑状态 - 用户不存在: {}", userId);
+            return false;
+        }
+        boolean blacklisted = user.getStatus() != null && user.getStatus() == 2;
+        log.debug("检查拉黑状态 - userId: {}, status: {}, isBlacklisted: {}", 
+                userId, user.getStatus(), blacklisted);
+        return blacklisted;
+    }
+
+    /**
      * 生成用户ID
      * 
      * 根据当前时间戳和随机数生成唯一的用户编号。
