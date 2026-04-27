@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    订单数据访问层映射文件
+
+    提供订单的创建、查询、状态更新等核心功能，
+    以及订单明细、用户余额、商品库存的相关操作。
+-->
+<mapper namespace="com.xingyou.mapper.OrderMapper">
+
+    <!--
+        插入订单主表数据
+
+        使用 useGeneratedKeys 和 keyProperty 自动获取生成的订单ID，
+        用于后续关联订单明细。
+    -->
+    <insert id="insert" parameterType="com.xingyou.entity.shopping.Order" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `order` (
+            order_num, 
+            user_id, 
+            total_amount, 
+            status, 
+            receiver_name, 
+            receiver_phone, 
+            receiver_address,
+            remark,
+            create_time,
+            original_amount,
+            discount
+        ) VALUES (
+            #{orderNum}, 
+            #{userId}, 
+            #{totalAmount}, 
+            #{status}, 
+            #{receiverName}, 
+            #{receiverPhone}, 
+            #{receiverAddress},
+            #{remark},
+            #{createTime},
+            #{originalAmount},
+            #{discount}
+        )
+    </insert>
+
+    <!-- 插入订单明细项 -->
+    <insert id="insertOrderItem" parameterType="com.xingyou.entity.shopping.OrderItem">
+        INSERT INTO order_item (
+            order_id, 
+            product_id, 
+            product_name, 
+            product_price, 
+            quantity
+        ) VALUES (
+            #{orderId}, 
+            #{productId}, 
+            #{productName}, 
+            #{productPrice}, 
+            #{quantity}
+        )
+    </insert>
+
+    <!-- 查询所有订单，按创建时间降序排列 -->
+    <select id="findAll" resultType="com.xingyou.entity.shopping.Order">
+        SELECT * FROM `order` ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据订单ID查询订单 -->
+    <select id="findById" resultType="com.xingyou.entity.shopping.Order">
+        SELECT * FROM `order` WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户ID查询该用户的所有订单，按创建时间降序排列 -->
+    <select id="findByUserId" resultType="com.xingyou.entity.shopping.Order">
+        SELECT * FROM `order` WHERE user_id = #{userId} ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据订单ID查询订单明细列表 -->
+    <select id="findOrderItemsByOrderId" resultType="com.xingyou.entity.shopping.OrderItem">
+        SELECT * FROM order_item WHERE order_id = #{orderId}
+    </select>
+
+    <!-- 更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE `order`
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新订单状态为已发货，记录发货时间（预购功能：发货时不扣款，不设置支付时间） -->
+    <update id="updateStatusToDelivered">
+        UPDATE `order`
+        SET status = #{status},
+            deliver_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新订单状态为已完成，记录支付时间和完成时间 -->
+    <update id="updateStatusToFinished">
+        UPDATE `order`
+        SET status = #{status},
+            pay_time = NOW(),
+            finish_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!--
+        更新用户余额
+
+        通过正负数控制充值或扣款：
+        正数表示增加余额，负数表示扣除余额。
+    -->
+    <update id="updateUserMoney">
+        UPDATE user SET money = money + #{money} WHERE user_id = #{userId}
+    </update>
+
+    <!-- 根据用户ID查询用户信息（用于余额校验） -->
+    <select id="findUserByUserId" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <!--
+        扣减商品库存
+
+        使用 WHERE 条件确保库存充足才执行更新，
+        防止超卖现象发生。
+    -->
+    <update id="updateProductStock">
+        UPDATE product SET stock = stock - #{quantity} WHERE id = #{productId} AND stock >= #{quantity}
+    </update>
+
+    <!-- 根据商品ID查询商品信息（用于库存检查） -->
+    <select id="findProductById" resultType="com.xingyou.entity.shopping.Product">
+        SELECT * FROM product WHERE id = #{id}
+    </select>
+
+    <!--
+        查询已完成订单的总收益（按收货时间范围筛选）
+
+        只统计状态为3（已完成/已收货）的订单总金额。
+        严格按收货时间（finish_time）筛选时间范围，仅统计已设置finish_time的订单。
+        根据days参数筛选时间范围：
+        - null: 查询全部（不限时间，但必须finish_time不为空）
+        - 1: 1天内
+        - 7: 7天内
+        - 30: 一个月内
+    -->
+    <select id="getTotalRevenue" resultType="java.lang.Double">
+        SELECT IFNULL(SUM(total_amount), 0)
+        FROM `order`
+        WHERE status = 3
+          AND finish_time IS NOT NULL
+        <if test="days != null">
+            AND finish_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        </if>
+    </select>
+
+    <!-- 更新订单的小票图片URL -->
+    <update id="updateReceiptImage">
+        UPDATE `order`
+        SET receipt_image = #{receiptImage}
+        WHERE id = #{id}
+    </update>
+
+    <!--
+        更新订单折扣信息
+
+        根据折扣率重新计算订单实际支付金额：
+        total_amount = original_amount * discount
+    -->
+    <update id="updateOrderDiscount">
+        UPDATE `order`
+        SET discount = #{discount},
+            original_amount = #{originalAmount},
+            total_amount = #{originalAmount} * #{discount}
+        WHERE id = #{id}
+    </update>
+
+    <!--
+        查询当月热销产品TOP N（按销售数量排序）
+
+        通过关联订单表和订单明细表，统计当月已完成订单中各商品的销售数量。
+        仅统计状态为3（已完成/已收货）且在本月内的订单。
+    -->
+    <select id="getTopSellingProducts" resultType="java.util.HashMap">
+        SELECT
+            oi.product_id AS productId,
+            oi.product_name AS productName,
+            SUM(oi.quantity) AS totalQuantity
+        FROM order_item oi
+        INNER JOIN `order` o ON oi.order_id = o.id
+        WHERE o.status = 3
+          AND o.finish_time >= DATE_FORMAT(NOW(), '%Y-%m-01')
+          AND o.finish_time &lt; DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
+        GROUP BY oi.product_id, oi.product_name
+        ORDER BY totalQuantity DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

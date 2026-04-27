@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    用户数据访问层映射文件
+
+    提供用户注册、登录、信息查询和更新等基础功能。
+-->
+<mapper namespace="com.xingyou.mapper.UserMapper">
+
+    <!-- 新增用户（用户注册） -->
+    <insert id="insert" parameterType="com.xingyou.entity.people.User">
+        INSERT INTO user (user_id, name, password, sex, email, phone, avatar, money, role)
+        VALUES (#{userId}, #{name}, #{password}, #{sex}, #{email}, #{phone}, #{avatar}, #{money}, #{role})
+    </insert>
+
+    <!-- 根据用户ID查询用户信息（用于登录验证） -->
+    <select id="findByUserId" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE user_id = #{userId}
+    </select>
+
+    <!--
+        选择性更新用户信息
+
+        只更新提供的非空字段，未提供的字段保持原值不变。
+        支持更新姓名、性别、密码、邮箱、手机、头像、状态等字段。
+    -->
+    <update id="update" parameterType="com.xingyou.entity.people.User">
+        UPDATE user
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="money != null">money = #{money},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 根据邮箱查询用户 -->
+    <select id="findByEmail" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE email = #{email}
+    </select>
+
+    <select id="selectUsersByRole" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE role = #{role} AND status = 1 ORDER BY user_id DESC
+    </select>
+
+    <select id="selectUsersByRoles" resultType="com.xingyou.entity.people.User">
+        SELECT * FROM user WHERE role IN
+        <foreach collection="roles" item="role" open="(" separator="," close=")">
+            #{role}
+        </foreach>
+        AND status = 1 ORDER BY role ASC, user_id DESC
+    </select>
+</mapper>

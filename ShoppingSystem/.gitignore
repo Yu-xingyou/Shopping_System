@@ -1,0 +1,32 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Build
+target/
+build/
+*.class
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node modules (前端)
+vue3-project/node_modules/
+vue3-project/dist/
+
+# Environment
+.env
+.env.local
+*.env
+*.local
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
